@@ -21,7 +21,8 @@
 
   /* LANDING */
   #landing{background:var(--bg);padding:0;position:relative;overflow:hidden;}
-  .landing-header{padding:56px 24px 20px;position:relative;z-index:2;}
+  .landing-header{padding:56px 24px 16px;position:relative;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;}
+  .settings-btn{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0;}
   .logo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:3px;line-height:1;}
   .logo span{color:var(--accent);}
   .tagline{font-size:13px;color:var(--muted);margin-top:4px;letter-spacing:1px;text-transform:uppercase;}
@@ -202,7 +203,20 @@
   .done-text{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#34d399;margin-top:6px;}
   .done-sub{font-size:13px;color:var(--muted);margin-top:4px;}
 
-  /* COLOR UTILS */
+  /* SETTINGS */
+  .settings-section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--accent);}
+  .settings-section-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
+  .settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:6px;}
+  .settings-row{display:flex;justify-content:space-between;align-items:center;}
+  .settings-row-label{font-size:13px;color:var(--muted);}
+  .settings-row-val{font-size:13px;font-weight:600;}
+  .settings-field-label{font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;}
+  .settings-field-hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px;}
+  .sync-status-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+  .sync-status-badge.connected{background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.3);}
+  .sync-status-badge.error{background:rgba(248,113,113,0.12);color:#f87171;border-color:rgba(248,113,113,0.3);}
+  .sync-status-badge.syncing{background:rgba(232,255,71,0.12);color:var(--accent);border-color:rgba(232,255,71,0.3);}
+  .wt-btn{position:relative;z-index:5;}
   .color-chest{color:var(--chest);}.color-back{color:var(--back);}.color-arms{color:var(--arms);}
   .color-legs{color:var(--legs);}.color-shoulders{color:var(--shoulders);}.color-abs{color:var(--abs);}
   .color-full{color:var(--full);}
@@ -229,26 +243,29 @@
   <div class="bg-glow glow1"></div>
   <div class="bg-glow glow2"></div>
   <div class="landing-header">
-    <div class="logo">GYM<span>BUDDY</span></div>
-    <div class="tagline">Your Personal Fitness Companion</div>
+    <div>
+      <div class="logo">GYM<span>BUDDY</span></div>
+      <div class="tagline">Your Personal Fitness Companion</div>
+    </div>
+    <div class="settings-btn" onclick="openSettings()">⚙️</div>
   </div>
   <div class="profiles-wrap">
 
     <!-- VENKY -->
-    <div class="profile-card me">
+    <div class="profile-card me" id="card-me">
       <div class="card-top-row">
-        <div class="avatar me" onclick="openProfile('me')">V</div>
-        <div class="profile-name-block" onclick="openProfile('me')">
+        <div class="avatar me">V</div>
+        <div class="profile-name-block">
           <h2>Venky</h2>
           <p>5'6" · 77 kg · Bulk &amp; Recomp</p>
         </div>
-        <div class="gym-badge" onclick="openProfile('me')">
+        <div class="gym-badge">
           <div class="gym-badge-num color-full" id="me-gym-count">0/1</div>
           <div class="gym-badge-lbl">Gym Days</div>
         </div>
-        <div class="edit-btn" onclick="openWeightModal(event,'me')">⚖️</div>
+        <div class="edit-btn wt-btn" id="wt-btn-me">⚖️</div>
       </div>
-      <div class="card-body" onclick="openProfile('me')">
+      <div class="card-body">
         <div class="card-left">
           <div class="profile-stats">
             <div class="stat-item">
@@ -275,20 +292,20 @@
     </div>
 
     <!-- ANCHITA -->
-    <div class="profile-card sister">
+    <div class="profile-card sister" id="card-sister">
       <div class="card-top-row">
-        <div class="avatar sister" onclick="openProfile('sister')">A</div>
-        <div class="profile-name-block" onclick="openProfile('sister')">
+        <div class="avatar sister">A</div>
+        <div class="profile-name-block">
           <h2>Anchita</h2>
           <p>5'3" · 72 kg · Fat Loss &amp; Tone</p>
         </div>
-        <div class="gym-badge" onclick="openProfile('sister')">
+        <div class="gym-badge">
           <div class="gym-badge-num" style="color:var(--accent2)" id="sis-gym-count">0/1</div>
           <div class="gym-badge-lbl">Gym Days</div>
         </div>
-        <div class="edit-btn" onclick="openWeightModal(event,'sister')">⚖️</div>
+        <div class="edit-btn wt-btn" id="wt-btn-sister">⚖️</div>
       </div>
-      <div class="card-body" onclick="openProfile('sister')">
+      <div class="card-body">
         <div class="card-left">
           <div class="profile-stats">
             <div class="stat-item">
@@ -374,6 +391,49 @@
     <div class="modal-title">🔄 Reschedule Workout</div>
     <div class="modal-day-options" id="reschedule-options"></div>
     <button class="modal-cancel" onclick="closeReschedule()">Cancel</button>
+  </div>
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div class="screen" id="settings-screen">
+  <div class="top-bar">
+    <div class="back-btn" onclick="goBack('landing')">←</div>
+    <div class="top-bar-title">⚙️ Settings</div>
+  </div>
+  <div class="scroll-content" style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+    <div class="settings-section">
+      <div class="settings-section-title">☁️ GitHub Gist Sync</div>
+      <div class="settings-section-sub">Sync workout data between Venky &amp; Anchita's devices automatically</div>
+    </div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="settings-row-label">Sync Status</div>
+        <div class="sync-status-badge" id="sync-status-badge">Not configured</div>
+      </div>
+      <div class="settings-row" id="last-sync-row" style="display:none">
+        <div class="settings-row-label">Last synced</div>
+        <div class="settings-row-val" id="last-sync-time">—</div>
+      </div>
+    </div>
+    <div class="settings-card">
+      <div class="settings-field-label">GitHub Personal Access Token</div>
+      <div class="settings-field-hint">Go to github.com → Settings → Developer Settings → Personal Access Tokens (classic) → New token. Enable <strong>gist</strong> scope only. Keep it secret.</div>
+      <input class="modal-input" id="gh-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="margin-top:8px">
+      <div class="settings-field-label" style="margin-top:12px">Gist ID</div>
+      <div class="settings-field-hint">Create a blank Gist at gist.github.com. Copy the ID from the URL after your username.</div>
+      <input class="modal-input" id="gh-gist-id" type="text" placeholder="e.g. a1b2c3d4e5f6a1b2c3d4" style="margin-top:8px">
+      <button class="modal-save" onclick="saveGithubConfig()" style="margin-top:12px">Save &amp; Test Connection ✓</button>
+      <button class="modal-cancel" onclick="clearGithubConfig()" style="margin-top:8px">Clear / Disconnect</button>
+    </div>
+    <div class="settings-card" id="sync-actions-card" style="display:none">
+      <div class="settings-field-label" style="margin-bottom:10px">Manual Sync</div>
+      <button class="modal-save" onclick="syncToGist(true)" style="margin-bottom:8px;background:var(--accent2)">⬆ Push my data to Gist</button>
+      <button class="modal-save" onclick="syncFromGist(true)">⬇ Pull latest from Gist</button>
+    </div>
+    <div class="settings-card">
+      <div class="settings-field-label" style="color:#f87171;margin-bottom:8px">⚠️ Danger Zone</div>
+      <button class="modal-cancel" onclick="resetAllData()" style="color:#f87171;border-color:rgba(248,113,113,0.4)">Reset All Local Data</button>
+    </div>
   </div>
 </div>
 
@@ -715,15 +775,8 @@ function switchTab(tab){
 }
 
 // ═══════════════════════════════════════════
-// WEIGHT
+// WEIGHT (handled below in card click section)
 // ═══════════════════════════════════════════
-function openWeightModal(evt,who){
-  evt.stopPropagation();
-  S.wtProfile=who;
-  document.getElementById('wt-modal-title').textContent=`⚖️ Log Weight — ${who==='me'?'Venky':'Anchita'}`;
-  document.getElementById('weight-input').value='';
-  document.getElementById('weight-modal').classList.add('open');
-}
 function closeWeightModal(){document.getElementById('weight-modal').classList.remove('open');}
 function saveWeight(){
   const v=parseFloat(document.getElementById('weight-input').value);
@@ -1039,7 +1092,186 @@ function rescheduleToDay(from,to){
 
 // INIT
 updateLanding();
+
+// ═══════════════════════════════════════════
+// CARD CLICK + WEIGHT BUTTON (event delegation — fixes mobile tap issues)
+// ═══════════════════════════════════════════
+document.getElementById('card-me').addEventListener('click', function(e){
+  if(e.target.closest('#wt-btn-me')){ openWeightModal('me'); return; }
+  openProfile('me');
+});
+document.getElementById('card-sister').addEventListener('click', function(e){
+  if(e.target.closest('#wt-btn-sister')){ openWeightModal('sister'); return; }
+  openProfile('sister');
+});
+
+function openWeightModal(who){
+  S.wtProfile = who;
+  document.getElementById('wt-modal-title').textContent = `⚖️ Log Weight — ${who==='me'?'Venky':'Anchita'}`;
+  document.getElementById('weight-input').value = '';
+  document.getElementById('weight-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('weight-input').focus(), 300);
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS & GITHUB GIST SYNC
+// ═══════════════════════════════════════════
+let GH = { token:'', gistId:'' };
+try {
+  const ghSaved = localStorage.getItem('gymbuddy_gh');
+  if(ghSaved){ const p=JSON.parse(ghSaved); GH.token=p.token||''; GH.gistId=p.gistId||''; }
+} catch(e){}
+
+function openSettings(){
+  document.getElementById('gh-token').value = GH.token ? '••••••••••••••••' : '';
+  document.getElementById('gh-gist-id').value = GH.gistId || '';
+  updateSyncStatusUI();
+  showScreen('settings-screen');
+}
+
+function updateSyncStatusUI(){
+  const badge = document.getElementById('sync-status-badge');
+  const actionsCard = document.getElementById('sync-actions-card');
+  const lastRow = document.getElementById('last-sync-row');
+  if(GH.token && GH.gistId){
+    badge.textContent = '✓ Connected';
+    badge.className = 'sync-status-badge connected';
+    actionsCard.style.display = 'flex';
+    actionsCard.style.flexDirection = 'column';
+    actionsCard.style.gap = '8px';
+    const lastSync = localStorage.getItem('gymbuddy_last_sync');
+    if(lastSync){ lastRow.style.display='flex'; document.getElementById('last-sync-time').textContent=lastSync; }
+  } else {
+    badge.textContent = 'Not configured';
+    badge.className = 'sync-status-badge';
+    actionsCard.style.display = 'none';
+    lastRow.style.display = 'none';
+  }
+}
+
+async function saveGithubConfig(){
+  const tokenInput = document.getElementById('gh-token').value.trim();
+  const gistId = document.getElementById('gh-gist-id').value.trim();
+  if(!gistId){ alert('Please enter a Gist ID'); return; }
+  // Only update token if user typed a new one (not the masked placeholder)
+  if(tokenInput && !tokenInput.startsWith('•')){ GH.token = tokenInput; }
+  GH.gistId = gistId;
+  if(!GH.token){ alert('Please enter your GitHub token'); return; }
+  localStorage.setItem('gymbuddy_gh', JSON.stringify({token:GH.token, gistId:GH.gistId}));
+  // Test connection
+  const badge = document.getElementById('sync-status-badge');
+  badge.textContent = 'Testing...'; badge.className = 'sync-status-badge syncing';
+  const ok = await testGistConnection();
+  if(ok){
+    badge.textContent = '✓ Connected'; badge.className = 'sync-status-badge connected';
+    updateSyncStatusUI();
+    // Initial sync — pull first to get existing data, then push
+    await syncFromGist(false);
+    await syncToGist(false);
+    alert('✅ Connected! Data is now syncing between devices.');
+  } else {
+    badge.textContent = 'Error — check token & Gist ID'; badge.className = 'sync-status-badge error';
+  }
+}
+
+function clearGithubConfig(){
+  if(!confirm('Disconnect GitHub sync? Your local data stays safe.')) return;
+  GH = {token:'', gistId:''};
+  localStorage.removeItem('gymbuddy_gh');
+  document.getElementById('gh-token').value = '';
+  document.getElementById('gh-gist-id').value = '';
+  updateSyncStatusUI();
+}
+
+async function testGistConnection(){
+  try {
+    const r = await fetch(`https://api.github.com/gists/${GH.gistId}`, {
+      headers:{'Authorization':`token ${GH.token}`,'Accept':'application/vnd.github.v3+json'}
+    });
+    return r.ok;
+  } catch(e){ return false; }
+}
+
+function getDataForSync(){
+  return JSON.stringify({
+    setsDone: S.setsDone,
+    notes: S.notes,
+    daysDone: {me:[...S.daysDone.me], sister:[...S.daysDone.sister]},
+    streaks: S.streaks,
+    rescheduled: S.rescheduled,
+    weights: S.weights,
+    gymDays: {me:[...S.gymDays.me], sister:[...S.gymDays.sister]},
+    lastUpdated: new Date().toISOString()
+  }, null, 2);
+}
+
+async function syncToGist(showAlert){
+  if(!GH.token || !GH.gistId) return;
+  try {
+    const r = await fetch(`https://api.github.com/gists/${GH.gistId}`, {
+      method:'PATCH',
+      headers:{'Authorization':`token ${GH.token}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body: JSON.stringify({ files:{ 'gymbuddy-data.json':{ content: getDataForSync() } } })
+    });
+    if(r.ok){
+      const now = new Date().toLocaleString();
+      localStorage.setItem('gymbuddy_last_sync', now);
+      document.getElementById('last-sync-time').textContent = now;
+      document.getElementById('last-sync-row').style.display = 'flex';
+      if(showAlert) alert('✅ Data pushed to Gist successfully!');
+    } else {
+      if(showAlert) alert('❌ Push failed — check your token permissions.');
+    }
+  } catch(e){ if(showAlert) alert('❌ Network error: ' + e.message); }
+}
+
+async function syncFromGist(showAlert){
+  if(!GH.token || !GH.gistId) return;
+  try {
+    const r = await fetch(`https://api.github.com/gists/${GH.gistId}`, {
+      headers:{'Authorization':`token ${GH.token}`,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!r.ok){ if(showAlert) alert('❌ Pull failed — check Gist ID.'); return; }
+    const data = await r.json();
+    const file = data.files['gymbuddy-data.json'];
+    if(!file || !file.content){ if(showAlert) alert('No gymbuddy data found in Gist yet.'); return; }
+    const p = JSON.parse(file.content);
+    // Merge — take whichever data is more recent
+    S.setsDone = p.setsDone || S.setsDone;
+    S.notes = p.notes || S.notes;
+    S.daysDone = {me:new Set(p.daysDone?.me||[...S.daysDone.me]), sister:new Set(p.daysDone?.sister||[...S.daysDone.sister])};
+    S.streaks = p.streaks || S.streaks;
+    S.rescheduled = p.rescheduled || S.rescheduled;
+    S.weights = p.weights || S.weights;
+    S.gymDays = {me:new Set(p.gymDays?.me||[...S.gymDays.me]), sister:new Set(p.gymDays?.sister||[...S.gymDays.sister])};
+    save();
+    updateLanding();
+    const now = new Date().toLocaleString();
+    localStorage.setItem('gymbuddy_last_sync', now);
+    if(showAlert) alert('✅ Data pulled from Gist!');
+  } catch(e){ if(showAlert) alert('❌ Error: ' + e.message); }
+}
+
+function resetAllData(){
+  if(!confirm('⚠️ This will delete ALL local workout data. Are you sure?')) return;
+  if(!confirm('Really sure? This cannot be undone.')) return;
+  localStorage.removeItem('gymbuddy_v3');
+  S.setsDone={}; S.notes={}; S.daysDone={me:new Set(),sister:new Set()};
+  S.streaks={me:0,sister:0}; S.rescheduled={}; S.weights={me:[],sister:[]};
+  S.gymDays={me:new Set(),sister:new Set()};
+  updateLanding();
+  alert('All data cleared.');
+}
+
+// Auto-sync on save (if configured)
+const _origSave = save;
+window.save = function(){
+  _origSave();
+  if(GH.token && GH.gistId) syncToGist(false);
+};
+
+// Pull from Gist on app load if configured
+if(GH.token && GH.gistId) syncFromGist(false);
 </script>
 </body>
 </html>
-
