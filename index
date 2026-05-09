@@ -1,1 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GymBuddy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0d0f; --surface:#18181c; --surface2:#222228; --border:#2e2e38;
+    --accent:#e8ff47; --accent2:#ff6b35; --text:#f0f0f0; --muted:#888899;
+    --chest:#ff6b35; --back:#47c8ff; --arms:#a78bfa; --legs:#34d399;
+    --shoulders:#fbbf24; --abs:#f472b6; --full:#e8ff47;
+    --radius:16px; --radius-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  .screen{display:none;min-height:100vh;flex-direction:column;}
+  .screen.active{display:flex;}
+  .scroll-content{overflow-y:auto;flex:1;}
+
+  /* LANDING */
+  #landing{background:var(--bg);padding:0;position:relative;overflow:hidden;}
+  .landing-header{padding:56px 24px 20px;position:relative;z-index:2;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:3px;line-height:1;}
+  .logo span{color:var(--accent);}
+  .tagline{font-size:13px;color:var(--muted);margin-top:4px;letter-spacing:1px;text-transform:uppercase;}
+  .bg-glow{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.15;pointer-events:none;}
+  .glow1{width:300px;height:300px;background:var(--accent);top:-100px;right:-80px;}
+  .glow2{width:250px;height:250px;background:var(--accent2);bottom:200px;left:-80px;}
+  .profiles-wrap{flex:1;display:flex;flex-direction:column;gap:16px;padding:12px 24px 40px;position:relative;z-index:2;}
+
+  /* PROFILE CARD */
+  .profile-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px;position:relative;overflow:hidden;}
+  .profile-card::before{content:'';position:absolute;top:0;right:0;width:130px;height:130px;border-radius:50%;filter:blur(50px);opacity:0.18;}
+  .profile-card.me::before{background:var(--accent);}
+  .profile-card.sister::before{background:var(--accent2);}
+  .profile-card.me{border-color:rgba(232,255,71,0.2);}
+  .profile-card.sister{border-color:rgba(255,107,53,0.2);}
+
+  .card-top-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;cursor:pointer;}
+  .avatar.me{background:rgba(232,255,71,0.15);color:var(--accent);border:2px solid rgba(232,255,71,0.3);}
+  .avatar.sister{background:rgba(255,107,53,0.15);color:var(--accent2);border:2px solid rgba(255,107,53,0.3);}
+  .profile-name-block{flex:1;cursor:pointer;}
+  .profile-name-block h2{font-size:19px;font-weight:700;}
+  .profile-name-block p{font-size:11px;color:var(--muted);margin-top:1px;}
+  .gym-badge{display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;}
+  .gym-badge-num{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;}
+  .gym-badge-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;}
+  .edit-btn{width:34px;height:34px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0;}
+
+  .card-body{display:flex;gap:12px;cursor:pointer;}
+  .card-left{flex:1;}
+  .card-right{width:108px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+  .wt-title{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;}
+  .wt-entry{display:flex;justify-content:space-between;align-items:baseline;}
+  .wt-val{font-size:14px;font-weight:700;}
+  .wt-date{font-size:10px;color:var(--muted);}
+  .wt-empty{font-size:11px;color:var(--muted);text-align:center;padding:8px 0;}
+
+  .profile-stats{display:flex;gap:16px;margin-bottom:12px;}
+  .stat-item{display:flex;flex-direction:column;gap:2px;}
+  .stat-val{font-size:18px;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
+  .stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+  .progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+  .progress-label{font-size:11px;color:var(--muted);}
+  .progress-pct{font-size:11px;font-weight:600;}
+  .progress-bar{height:5px;background:var(--border);border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:99px;transition:width 0.6s ease;}
+  .me .progress-fill{background:var(--accent);}
+  .sister .progress-fill{background:var(--accent2);}
+  .streak-badge{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:4px 10px;font-size:11px;font-weight:600;margin-top:10px;}
+  .me .streak-badge{background:rgba(232,255,71,0.1);border:1px solid rgba(232,255,71,0.2);color:var(--accent);}
+  .sister .streak-badge{background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.2);color:var(--accent2);}
+
+  /* MODALS */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 44px;width:100%;max-width:500px;border-top:1px solid var(--border);}
+  .modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:16px;}
+  .modal-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);outline:none;margin-bottom:12px;}
+  .modal-input::placeholder{color:var(--muted);}
+  .modal-save{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;}
+  .modal-cancel{width:100%;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;}
+  .modal-day-options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .modal-day-option{padding:13px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:14px;font-weight:500;display:flex;justify-content:space-between;align-items:center;}
+  .modal-day-option:active{background:rgba(232,255,71,0.08);border-color:var(--accent);}
+
+  /* PROFILE HOME */
+  #profile-home{background:var(--bg);}
+  .top-bar{display:flex;align-items:center;padding:52px 20px 14px;gap:10px;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);}
+  .back-btn{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--text);flex-shrink:0;}
+  .top-bar-title{font-size:17px;font-weight:700;flex:1;}
+  .top-bar-right{display:flex;align-items:center;gap:10px;}
+  .top-bar-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+  .attendance-chip{display:flex;flex-direction:column;align-items:center;}
+  .attendance-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--accent);}
+  .attendance-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;}
+
+  .view-tabs{display:flex;gap:8px;padding:14px 20px 10px;}
+  .tab-btn{flex:1;padding:11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;text-align:center;}
+  .tab-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(232,255,71,0.08);}
+  .tab-btn.active.orange{border-color:var(--accent2);color:var(--accent2);background:rgba(255,107,53,0.08);}
+
+  /* DAY LIST — single column */
+  .days-list{display:flex;flex-direction:column;gap:10px;padding:0 20px 24px;}
+  .day-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;cursor:pointer;transition:transform 0.15s;display:flex;align-items:center;gap:12px;}
+  .day-card:active{transform:scale(0.98);}
+  .day-card.today{border-color:var(--accent);}
+  .day-card.completed{border-color:rgba(52,211,153,0.5);}
+  .day-card.missed{border-color:rgba(255,107,53,0.35);}
+  .day-left{display:flex;flex-direction:column;align-items:center;min-width:40px;}
+  .day-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;line-height:1;}
+  .today-tag{font-size:8px;font-weight:700;color:var(--accent);background:rgba(232,255,71,0.12);border:1px solid rgba(232,255,71,0.3);border-radius:99px;padding:2px 5px;letter-spacing:0.3px;margin-top:3px;}
+  .day-mid{flex:1;}
+  .day-parts-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px;}
+  .part-chip{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;}
+  .day-progress-mini{height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+  .day-progress-mini-fill{height:100%;border-radius:99px;transition:width 0.5s;}
+  .day-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+  .day-status-icon{font-size:18px;}
+  .day-pct-text{font-size:11px;font-weight:700;color:var(--muted);}
+
+  /* BODY PART LIST */
+  .bodypart-list{display:flex;flex-direction:column;gap:10px;padding:0 20px 24px;}
+  .bodypart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:transform 0.15s;}
+  .bodypart-card:active{transform:scale(0.97);}
+  .bp-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .bp-info{flex:1;}
+  .bp-name{font-size:15px;font-weight:700;}
+  .bp-count{font-size:12px;color:var(--muted);margin-top:2px;}
+  .bp-arrow{color:var(--muted);font-size:18px;}
+
+  /* SESSION */
+  #workout-session{background:var(--bg);}
+  .session-hero{padding:52px 20px 14px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
+  .session-nav{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .session-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;flex:1;line-height:1.1;}
+  .reschedule-btn{background:rgba(255,107,53,0.12);border:1px solid rgba(255,107,53,0.3);color:var(--accent2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+  .session-progress-wrap{display:flex;align-items:center;gap:10px;}
+  .session-progress-bar{flex:1;height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
+  .session-progress-fill{height:100%;border-radius:99px;background:var(--accent);transition:width 0.4s ease;}
+  .session-progress-pct{font-size:13px;font-weight:700;color:var(--accent);min-width:36px;text-align:right;}
+  .session-content{padding:14px 20px 40px;display:flex;flex-direction:column;gap:12px;}
+
+  .section-header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);margin-bottom:2px;}
+  .section-icon{font-size:18px;}
+  .section-label{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;flex:1;}
+  .section-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:3px 8px;border-radius:99px;}
+
+  .exercise-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color 0.2s;}
+  .exercise-card.all-done{border-color:rgba(52,211,153,0.5);}
+  .exercise-header{padding:13px 14px;display:flex;align-items:flex-start;gap:11px;cursor:pointer;}
+  .exercise-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .exercise-meta{flex:1;}
+  .exercise-name{font-size:14px;font-weight:700;}
+  .exercise-detail{font-size:11px;color:var(--muted);margin-top:2px;}
+  .exercise-tags{display:flex;gap:5px;margin-top:5px;}
+  .diff-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;border:1px solid;}
+  .diff-beginner{color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08);}
+  .diff-intermediate{color:#fbbf24;border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.08);}
+  .diff-advanced{color:#f87171;border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.08);}
+  .expand-icon{color:var(--muted);font-size:16px;transition:transform 0.2s;padding-top:2px;}
+  .exercise-card.expanded .expand-icon{transform:rotate(180deg);}
+
+  .sets-row{padding:0 14px 12px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;}
+  .sets-label{font-size:11px;color:var(--muted);margin-right:2px;}
+  .set-circle{width:36px;height:36px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+  .set-circle.done{border-color:var(--accent);background:var(--accent);color:#000;animation:popIn 0.25s ease;}
+  @keyframes popIn{0%{transform:scale(0.7);}60%{transform:scale(1.15);}100%{transform:scale(1);}}
+
+  .notes-input{margin:0 14px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);width:calc(100% - 28px);resize:none;outline:none;}
+  .notes-input::placeholder{color:var(--muted);}
+
+  .instruction-panel{margin:0 14px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;display:none;}
+  .exercise-card.expanded .instruction-panel{display:block;}
+  .instruction-tabs{display:flex;border-bottom:1px solid var(--border);}
+  .instr-tab{flex:1;padding:9px;font-size:11px;font-weight:600;text-align:center;cursor:pointer;color:var(--muted);border:none;background:transparent;font-family:'DM Sans',sans-serif;transition:color 0.2s;text-transform:uppercase;letter-spacing:0.5px;}
+  .instr-tab.active{color:var(--accent);border-bottom:2px solid var(--accent);}
+  .instr-content{padding:12px;}
+  .instr-pane{display:none;}
+  .instr-pane.active{display:block;}
+  .instr-list{list-style:none;display:flex;flex-direction:column;gap:7px;}
+  .instr-list li{font-size:12px;color:var(--text);line-height:1.5;padding-left:16px;position:relative;}
+  .instr-list li::before{content:'▸';position:absolute;left:0;color:var(--accent);font-size:10px;top:2px;}
+
+  /* POSTURE IMAGES */
+  .posture-images{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .posture-img-wrap{border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--surface2);position:relative;min-height:80px;display:flex;align-items:center;justify-content:center;}
+  .posture-img-wrap img{width:100%;display:block;max-height:160px;object-fit:cover;}
+  .posture-img-label{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:700;background:rgba(0,0,0,0.8);color:var(--text);padding:2px 6px;border-radius:99px;letter-spacing:0.5px;white-space:nowrap;}
+
+  .video-link{display:flex;align-items:center;gap:10px;background:rgba(255,0,0,0.08);border:1px solid rgba(255,0,0,0.2);border-radius:8px;padding:10px 12px;text-decoration:none;color:var(--text);font-size:13px;font-weight:500;}
+  .video-link .yt-icon{font-size:20px;}
+  .video-link span{flex:1;}
+  .video-link .ext{font-size:14px;color:var(--muted);}
+
+  .session-done-banner{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius);padding:20px;text-align:center;display:none;}
+  .session-done-banner.visible{display:block;}
+  .done-emoji{font-size:40px;}
+  .done-text{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#34d399;margin-top:6px;}
+  .done-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  /* COLOR UTILS */
+  .color-chest{color:var(--chest);}.color-back{color:var(--back);}.color-arms{color:var(--arms);}
+  .color-legs{color:var(--legs);}.color-shoulders{color:var(--shoulders);}.color-abs{color:var(--abs);}
+  .color-full{color:var(--full);}
+  .bg-chest{background:rgba(255,107,53,0.15);}.bg-back{background:rgba(71,200,255,0.15);}
+  .bg-arms{background:rgba(167,139,250,0.15);}.bg-legs{background:rgba(52,211,153,0.15);}
+  .bg-shoulders{background:rgba(251,191,36,0.15);}.bg-abs{background:rgba(244,114,182,0.15);}
+  .bg-full{background:rgba(232,255,71,0.15);}.bg-warmup{background:rgba(232,255,71,0.08);}
+  .chip-chest{background:rgba(255,107,53,0.2);color:var(--chest);}.chip-back{background:rgba(71,200,255,0.2);color:var(--back);}
+  .chip-arms{background:rgba(167,139,250,0.2);color:var(--arms);}.chip-legs{background:rgba(52,211,153,0.2);color:var(--legs);}
+  .chip-shoulders{background:rgba(251,191,36,0.2);color:var(--shoulders);}.chip-abs{background:rgba(244,114,182,0.2);color:var(--abs);}
+  .chip-full{background:rgba(232,255,71,0.2);color:var(--full);}.chip-warmup{background:rgba(232,255,71,0.1);color:var(--accent);}
+  .chip-lowerbo{background:rgba(52,211,153,0.2);color:var(--legs);}
+  .chip-activerecovery{background:rgba(232,255,71,0.15);color:var(--full);}
+  .chip-tummyfo{background:rgba(244,114,182,0.2);color:var(--abs);}
+  .chip-yoga{background:rgba(167,139,250,0.2);color:var(--arms);}
+  .chip-stretch{background:rgba(52,211,153,0.2);color:var(--legs);}
+  .chip-cardio{background:rgba(71,200,255,0.2);color:var(--back);}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div class="screen active" id="landing">
+  <div class="bg-glow glow1"></div>
+  <div class="bg-glow glow2"></div>
+  <div class="landing-header">
+    <div class="logo">GYM<span>BUDDY</span></div>
+    <div class="tagline">Your Personal Fitness Companion</div>
+  </div>
+  <div class="profiles-wrap">
+
+    <!-- VENKY -->
+    <div class="profile-card me">
+      <div class="card-top-row">
+        <div class="avatar me" onclick="openProfile('me')">V</div>
+        <div class="profile-name-block" onclick="openProfile('me')">
+          <h2>Venky</h2>
+          <p>5'6" · 77 kg · Bulk &amp; Recomp</p>
+        </div>
+        <div class="gym-badge" onclick="openProfile('me')">
+          <div class="gym-badge-num color-full" id="me-gym-count">0/1</div>
+          <div class="gym-badge-lbl">Gym Days</div>
+        </div>
+        <div class="edit-btn" onclick="openWeightModal(event,'me')">⚖️</div>
+      </div>
+      <div class="card-body" onclick="openProfile('me')">
+        <div class="card-left">
+          <div class="profile-stats">
+            <div class="stat-item">
+              <span class="stat-val color-chest" id="me-days-done">0</span>
+              <span class="stat-lbl">Days Done</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val color-arms" id="me-streak">0🔥</span>
+              <span class="stat-lbl">Streak</span>
+            </div>
+          </div>
+          <div class="progress-row">
+            <span class="progress-label">Weekly Progress</span>
+            <span class="progress-pct color-full" id="me-pct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="me-bar" style="width:0%"></div></div>
+          <div class="streak-badge">⚡ Keep the streak going!</div>
+        </div>
+        <div class="card-right">
+          <div class="wt-title">⚖️ Weight Log</div>
+          <div id="me-wt-history"><div class="wt-empty">Tap ⚖️ to log</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANCHITA -->
+    <div class="profile-card sister">
+      <div class="card-top-row">
+        <div class="avatar sister" onclick="openProfile('sister')">A</div>
+        <div class="profile-name-block" onclick="openProfile('sister')">
+          <h2>Anchita</h2>
+          <p>5'3" · 72 kg · Fat Loss &amp; Tone</p>
+        </div>
+        <div class="gym-badge" onclick="openProfile('sister')">
+          <div class="gym-badge-num" style="color:var(--accent2)" id="sis-gym-count">0/1</div>
+          <div class="gym-badge-lbl">Gym Days</div>
+        </div>
+        <div class="edit-btn" onclick="openWeightModal(event,'sister')">⚖️</div>
+      </div>
+      <div class="card-body" onclick="openProfile('sister')">
+        <div class="card-left">
+          <div class="profile-stats">
+            <div class="stat-item">
+              <span class="stat-val color-chest" id="sis-days-done">0</span>
+              <span class="stat-lbl">Days Done</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val color-arms" id="sis-streak">0🔥</span>
+              <span class="stat-lbl">Streak</span>
+            </div>
+          </div>
+          <div class="progress-row">
+            <span class="progress-label">Weekly Progress</span>
+            <span class="progress-pct" style="color:var(--accent2)" id="sis-pct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="sis-bar" style="width:0%;background:var(--accent2)"></div></div>
+          <div class="streak-badge">💪 Every rep counts!</div>
+        </div>
+        <div class="card-right">
+          <div class="wt-title">⚖️ Weight Log</div>
+          <div id="sis-wt-history"><div class="wt-empty">Tap ⚖️ to log</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- WEIGHT MODAL -->
+<div class="modal-overlay" id="weight-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="wt-modal-title">Log Weight</div>
+    <input class="modal-input" id="weight-input" type="number" placeholder="Enter weight in kg (e.g. 76.5)" step="0.1" min="30" max="300">
+    <button class="modal-save" onclick="saveWeight()">Save Weight ✓</button>
+    <button class="modal-cancel" onclick="closeWeightModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- PROFILE HOME -->
+<div class="screen" id="profile-home">
+  <div class="top-bar">
+    <div class="back-btn" onclick="goBack('landing')">←</div>
+    <div class="top-bar-title" id="ph-title">Venky's Workouts</div>
+    <div class="top-bar-right">
+      <div class="attendance-chip">
+        <div class="attendance-num" id="ph-attendance">0/1</div>
+        <div class="attendance-lbl">This Month</div>
+      </div>
+      <div class="top-bar-avatar" id="ph-avatar"></div>
+    </div>
+  </div>
+  <div class="scroll-content">
+    <div class="view-tabs">
+      <button class="tab-btn active" id="tab-day" onclick="switchTab('day')">📅 By Day</button>
+      <button class="tab-btn" id="tab-bp" onclick="switchTab('bodypart')">💪 By Body Part</button>
+    </div>
+    <div id="view-day"><div class="days-list" id="days-list"></div></div>
+    <div id="view-bodypart" style="display:none"><div class="bodypart-list" id="bp-list"></div></div>
+  </div>
+</div>
+
+<!-- WORKOUT SESSION -->
+<div class="screen" id="workout-session">
+  <div class="session-hero">
+    <div class="session-nav">
+      <div class="back-btn" onclick="goBack('profile-home')">←</div>
+      <div class="session-title" id="session-title">Monday</div>
+      <button class="reschedule-btn" onclick="openReschedule()">Reschedule</button>
+    </div>
+    <div class="session-progress-wrap">
+      <div class="session-progress-bar"><div class="session-progress-fill" id="session-progress-fill" style="width:0%"></div></div>
+      <div class="session-progress-pct" id="session-progress-pct">0%</div>
+    </div>
+  </div>
+  <div class="scroll-content">
+    <div class="session-content" id="session-content"></div>
+  </div>
+</div>
+
+<!-- RESCHEDULE MODAL -->
+<div class="modal-overlay" id="reschedule-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">🔄 Reschedule Workout</div>
+    <div class="modal-day-options" id="reschedule-options"></div>
+    <button class="modal-cancel" onclick="closeReschedule()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// EXERCISE IMAGES
+// Using ExerciseDB GIFs via jsdelivr CDN (open, hotlink-friendly)
+// Base: https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/{Name}/0.jpg
+// For GIF we use a known working GIF host: everkinetic on GitHub Pages
+// ═══════════════════════════════════════════
+function edb(folder, frame1, frame2){
+  // ExerciseDB static JPGs from yuhonas/free-exercise-db (open license, jsdelivr CDN)
+  const base = 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/';
+  return {
+    gif: `${base}${folder}/${frame1}.jpg`,
+    static: `${base}${folder}/${frame2}.jpg`
+  };
+}
+
+const EX_IMGS = {
+  // Warmup
+  wu1: edb('Pushups','0','1'),
+  wu2: edb('Walking_Treadmill','0','1'),
+  wu3: edb('Jump_Rope_Jumps','0','1'),
+  // Venky — Chest & Triceps
+  m1:  edb('Barbell_Bench_Press_-_Medium_Grip','0','1'),
+  m2:  edb('Incline_Dumbbell_Press','0','1'),
+  m3:  edb('Cable_Cross-over','0','1'),
+  m4:  edb('Triceps_Pushdown','0','1'),
+  m5:  edb('Lying_Triceps_Press','0','1'),
+  m6:  edb('Dips_-_Chest_Version','0','1'),
+  // Venky — Back & Biceps
+  m7:  edb('Wide-Grip_Lat_Pulldown','0','1'),
+  m8:  edb('Seated_Cable_Rows','0','1'),
+  m9:  edb('Barbell_Row','0','1'),
+  m10: edb('Face_Pull','0','1'),
+  m11: edb('Barbell_Curl','0','1'),
+  m12: edb('Hammer_Curls','0','1'),
+  // Venky — Shoulders & Abs
+  m13: edb('Barbell_Shoulder_Press','0','1'),
+  m14: edb('Side_Lateral_Raise','0','1'),
+  m15: edb('Arnold_Dumbbell_Press','0','1'),
+  m16: edb('Plank','0','1'),
+  m17: edb('Decline_Crunch','0','1'),
+  m18: edb('Hanging_Leg_Raise','0','1'),
+  // Venky — Legs & Glutes
+  m19: edb('Barbell_Full_Squat','0','1'),
+  m20: edb('Romanian_Deadlift','0','1'),
+  m21: edb('Leg_Press','0','1'),
+  m22: edb('Dumbbell_Lunges','0','1'),
+  m23: edb('Barbell_Hip_Thrust','0','1'),
+  m24: edb('Lying_Leg_Curls','0','1'),
+  // Venky — Chest & Arms (Fri)
+  m25: edb('Pushups','0','1'),
+  m26: edb('Dumbbell_Flyes','0','1'),
+  m27: edb('Barbell_Preacher_Curl','0','1'),
+  m28: edb('Concentration_Curls','0','1'),
+  m29: edb('Dumbbell_Kickbacks','0','1'),
+  m30: edb('Close-Grip_Barbell_Bench_Press','0','1'),
+  // Venky — Back & Shoulders (Sat)
+  m31: edb('Wide-Grip_Pull-Up','0','1'),
+  m32: edb('Dumbbell_Bent_Over_Row','0','1'),
+  m33: edb('Straight-Arm_Pulldown','0','1'),
+  m34: edb('Dumbbell_Shoulder_Press','0','1'),
+  m35: edb('Front_Dumbbell_Raise','0','1'),
+  m36: edb('Barbell_Shrug','0','1'),
+  // Venky — Full Body (Sun)
+  m37: edb('Dumbbell_Goblet_Squat','0','1'),
+  m38: edb('Inverted_Row','0','1'),
+  m39: edb('Mountain_Climbers','0','1'),
+  m40: edb('Pushups','0','1'),
+  // Anchita — Arms & Abs
+  s1:  edb('Bicep_Curl_with_Band','0','1'),
+  s2:  edb('Dumbbell_Kickbacks','0','1'),
+  s3:  edb('Lying_Triceps_Press','0','1'),
+  s4:  edb('Crunch','0','1'),
+  s5:  edb('Bicycle_Crunch','0','1'),
+  s6:  edb('Plank','0','1'),
+  // Anchita — Cardio & Full
+  s7:  edb('Walking_Treadmill','0','1'),
+  s8:  edb('Jumping_Jacks','0','1'),
+  s9:  edb('Step-up','0','1'),
+  s10: edb('Burpee','0','1'),
+  // Anchita — Arms & Shoulders
+  s11: edb('Hammer_Curls','0','1'),
+  s12: edb('Triceps_Dips','0','1'),
+  s13: edb('Side_Lateral_Raise','0','1'),
+  s14: edb('Front_Dumbbell_Raise','0','1'),
+  s15: edb('Arm_Circles','0','1'),
+  // Anchita — Lower Body & Abs
+  s16: edb('Glute_Bridge','0','1'),
+  s17: edb('Sumo_Squat','0','1'),
+  s18: edb('Donkey_Kick','0','1'),
+  s19: edb('Leg_Raises','0','1'),
+  s20: edb('Russian_Twist','0','1'),
+  // Anchita — Arms & Cardio
+  s21: edb('Push-up','0','1'),
+  s22: edb('Triceps_Dips','0','1'),
+  s23: edb('High_Knees_-_Running_in_Place','0','1'),
+  s24: edb('Pushups','0','1'),
+  // Anchita — Full Body Tummy
+  s25: edb('Kettlebell_Swing','0','1'),
+  s26: edb('Dead_Bug','0','1'),
+  s27: edb('Flutter_Kicks','0','1'),
+  s28: edb('Side_Plank','0','1'),
+  // Anchita — Yoga & Stretch
+  s29: edb('Cat_Stretch','0','1'),
+  s30: edb('Childs_Pose','0','1'),
+  s31: edb('Hip_Flexor_Stretch','0','1'),
+  s32: edb('Pushups','0','1'),
+  // Cooldown
+  cd1: edb('Cross-Body_Shoulder_Stretch','0','1'),
+  cd2: edb('Standing_Hip_Circle','0','1'),
+};
+
+// ═══════════════════════════════════════════
+// WORKOUT DATA
+// ═══════════════════════════════════════════
+const TODAY_IDX = new Date().getDay()===0?6:new Date().getDay()-1;
+
+const WARMUP = [
+  {id:'wu1',name:'Dynamic Stretching',icon:'🤸',sets:1,reps:'5 min',part:'warmup',difficulty:'beginner',
+   tips:['Start with neck rolls, then shoulder circles','Move to arm swings and hip circles','Finish with leg swings, forward and lateral','Keep movements controlled and fluid'],
+   posture:['Stand tall, feet shoulder-width apart','Breathe steadily throughout','Never bounce — keep movements smooth','Increase range of motion gradually'],
+   video:'https://www.youtube.com/results?search_query=dynamic+stretching+warm+up+gym'},
+  {id:'wu2',name:'Treadmill / Brisk Walk',icon:'🏃',sets:1,reps:'5–7 min',part:'warmup',difficulty:'beginner',
+   tips:['Start at moderate pace 5–6 km/h','Pump your arms naturally','Gradually increase speed','Focus on breathing rhythm'],
+   posture:['Head up, eyes forward','Shoulders back and relaxed','Engage your core lightly','Land mid-foot, not on heels'],
+   video:'https://www.youtube.com/results?search_query=treadmill+warm+up+routine'},
+  {id:'wu3',name:'Jump Rope',icon:'⭕',sets:2,reps:'1 min',part:'warmup',difficulty:'beginner',
+   tips:['Jump with both feet together','Wrists do the rotation, not arms','Land softly on balls of feet','Keep elbows close to body'],
+   posture:['Stand tall, slight forward lean','Core engaged throughout','Knees soft — never locked','Eyes forward, not down'],
+   video:'https://www.youtube.com/results?search_query=jump+rope+warm+up+beginners'}
+];
+
+const COOLDOWN = [
+  {id:'cd1',name:'Chest & Shoulder Stretch',icon:'🙆',sets:1,reps:'30 sec each',part:'cooldown',difficulty:'beginner',
+   tips:['Clasp hands behind back, squeeze shoulder blades','Hold stretch — do not bounce','Breathe deeply into the stretch','Feel the chest opening up'],
+   posture:['Stand upright, chest lifted','Keep chin parallel to floor','Relax your jaw and neck','Arms as straight as comfortable'],
+   video:'https://www.youtube.com/results?search_query=chest+shoulder+stretch+cooldown'},
+  {id:'cd2',name:'Full Body Stretch',icon:'🧘',sets:1,reps:'5 min',part:'cooldown',difficulty:'beginner',
+   tips:['Move slowly through each stretch','Hold each position 20–30 seconds','Focus on muscles worked today','Never force a stretch — ease into it'],
+   posture:['Find a comfortable position on the floor','Use a mat if available','Breathe slowly and deeply','Relax progressively with each exhale'],
+   video:'https://www.youtube.com/results?search_query=post+workout+full+body+cooldown+stretch'}
+];
+
+const ME_SCHED = [
+  {day:'Monday',parts:['Chest','Triceps'],exercises:[
+    {id:'m1',name:'Barbell Bench Press',icon:'🏋️',sets:4,reps:'8–10',part:'chest',difficulty:'intermediate',tips:['Plant feet flat on floor','Grip slightly wider than shoulder-width','Lower bar to mid-chest with control','Drive up explosively, lock out at top'],posture:['Slight arch in lower back','Shoulder blades pinched and retracted','Bar travels in slight arc','Wrists stacked above elbows'],video:'https://www.youtube.com/results?search_query=barbell+bench+press+form+tutorial'},
+    {id:'m2',name:'Incline Dumbbell Press',icon:'💪',sets:3,reps:'10–12',part:'chest',difficulty:'intermediate',tips:['Set bench to 30–45 degrees','Press dumbbells up and slightly inward','Full range of motion each rep','Control the descent — 2 seconds down'],posture:['Back flat against bench','Feet flat on floor','Elbows at 75° angle to body','Do not flare elbows too wide'],video:'https://www.youtube.com/results?search_query=incline+dumbbell+press+form'},
+    {id:'m3',name:'Cable Fly / Pec Deck',icon:'🦅',sets:3,reps:'12–15',part:'chest',difficulty:'beginner',tips:['Focus on squeezing chest at peak contraction','Arms stay slightly bent throughout','Slow controlled movement both ways','Feel the stretch on the way back'],posture:['Chest up and forward','Core tight and stable','Shoulder blades pulled back','Keep wrists neutral'],video:'https://www.youtube.com/results?search_query=cable+fly+chest+proper+form'},
+    {id:'m4',name:'Tricep Rope Pushdown',icon:'⬇️',sets:3,reps:'12–15',part:'arms',difficulty:'beginner',tips:['Lock elbows at sides throughout','Flare rope outward at bottom','Full extension at bottom of movement','Squeeze triceps hard at lockout'],posture:['Stand tall, slight forward lean','Core engaged','Upper arms pinned to sides','Wrists neutral — do not curl them'],video:'https://www.youtube.com/results?search_query=tricep+rope+pushdown+form'},
+    {id:'m5',name:'Overhead Tricep Extension',icon:'🔺',sets:3,reps:'10–12',part:'arms',difficulty:'intermediate',tips:['Use EZ bar or dumbbell','Keep elbows pointing up, not flaring','Lower slowly behind head','Full stretch at bottom'],posture:['Stand or sit upright','Core braced','Elbows close to ears','Do not let lower back arch excessively'],video:'https://www.youtube.com/results?search_query=overhead+tricep+extension+form'},
+    {id:'m6',name:'Dips (Chest-Leaning)',icon:'🤸',sets:3,reps:'8–10',part:'arms',difficulty:'intermediate',tips:['Lean slightly forward for chest focus','Lower until shoulders are below elbows','Drive up through chest and triceps','Use assistance machine if needed'],posture:['Cross ankles behind you','Lean chest forward about 30°','Shoulder blades back and down','Do not shrug at top'],video:'https://www.youtube.com/results?search_query=chest+dips+form+tutorial'}
+  ]},
+  {day:'Tuesday',parts:['Back','Biceps'],exercises:[
+    {id:'m7',name:'Lat Pulldown',icon:'⬇️',sets:4,reps:'10–12',part:'back',difficulty:'beginner',tips:['Wide overhand grip, slightly wider than shoulders','Pull bar to upper chest, not behind neck','Lean back 15–20°, keep chest up','Squeeze lats at bottom, stretch fully at top'],posture:['Thighs locked under pad','Chest tall and proud','Do not use momentum or swing','Pull with elbows, not hands'],video:'https://www.youtube.com/results?search_query=lat+pulldown+proper+form+tutorial'},
+    {id:'m8',name:'Seated Cable Row',icon:'🚣',sets:3,reps:'10–12',part:'back',difficulty:'beginner',tips:['Pull handle to belly button','Squeeze shoulder blades together at end','Keep torso upright, minimal sway','Fully extend arms between reps'],posture:['Sit upright, core tight','Chest up, slight lean back at finish','Knees slightly bent','Feet flat on foot platform'],video:'https://www.youtube.com/results?search_query=seated+cable+row+proper+form'},
+    {id:'m9',name:'Bent-Over Barbell Row',icon:'🏋️',sets:3,reps:'8–10',part:'back',difficulty:'intermediate',tips:['Hip hinge — push hips back, not knees forward','Pull bar to lower chest / belly','Maintain neutral spine throughout','Breathe in on way down, out pulling up'],posture:['Back flat, slight arch in lumbar','Torso at 45° or more to floor','Shoulder blades retract at top','Bar stays close to body'],video:'https://www.youtube.com/results?search_query=bent+over+barbell+row+form'},
+    {id:'m10',name:'Face Pulls',icon:'🎯',sets:3,reps:'15',part:'back',difficulty:'beginner',tips:['Pull rope to face level','Elbows high — level with shoulders','External rotate wrists at end','Light weight, full focus on rear delts'],posture:['Stand upright or slight lean back','Core engaged','Do not shrug shoulders','Keep elbows high and flared out'],video:'https://www.youtube.com/results?search_query=face+pulls+form+tutorial'},
+    {id:'m11',name:'Barbell Curl',icon:'💪',sets:3,reps:'10–12',part:'arms',difficulty:'beginner',tips:['Full range of motion — full extension to full curl','Keep elbows stationary at sides','Squeeze bicep hard at top','Don\'t swing — control the weight'],posture:['Stand upright, no momentum','Core tight','Wrists neutral','Chin up, eyes forward'],video:'https://www.youtube.com/results?search_query=barbell+curl+proper+form'},
+    {id:'m12',name:'Hammer Curl',icon:'🔨',sets:3,reps:'12',part:'arms',difficulty:'beginner',tips:['Neutral grip (thumbs up) throughout','Alternate arms or do both together','Do not rotate wrist at top','Focus on brachialis muscle'],posture:['Stand or sit upright','Elbows pinned to sides','Controlled on the way down','Do not lean back for momentum'],video:'https://www.youtube.com/results?search_query=hammer+curl+form+tutorial'}
+  ]},
+  {day:'Wednesday',parts:['Shoulders','Abs'],exercises:[
+    {id:'m13',name:'Overhead Press (Barbell)',icon:'🏋️',sets:4,reps:'8–10',part:'shoulders',difficulty:'intermediate',tips:['Press bar directly overhead — slight backward arc','Lock out fully at top','Lower to upper chest/chin level','Brace core like you\'re about to be punched'],posture:['Stand feet shoulder-width','Slight lean back at bottom only','Wrists straight over elbows','Squeeze glutes for stability'],video:'https://www.youtube.com/results?search_query=overhead+press+barbell+form'},
+    {id:'m14',name:'Lateral Raises',icon:'↔️',sets:4,reps:'12–15',part:'shoulders',difficulty:'beginner',tips:['Lead with elbows, not hands','Raise to shoulder height only','Slight forward lean of torso','Slow controlled descent'],posture:['Slight bend in elbows','Thumbs slightly down','Do not shrug up — depress shoulders','Use light weight, perfect form'],video:'https://www.youtube.com/results?search_query=lateral+raises+form+shoulder'},
+    {id:'m15',name:'Arnold Press',icon:'🌀',sets:3,reps:'10',part:'shoulders',difficulty:'intermediate',tips:['Start with palms facing you at chin','Rotate palms out as you press up','Reverse on the way down','Full range of motion'],posture:['Sit on bench with back support','Core engaged','Do not arch lower back excessively','Keep movement controlled at all times'],video:'https://www.youtube.com/results?search_query=arnold+press+dumbbell+form'},
+    {id:'m16',name:'Plank',icon:'📏',sets:3,reps:'45 sec',part:'abs',difficulty:'beginner',tips:['Hold for full 45 seconds — no sagging','If hips sag, rest and reset','Breathe consistently throughout','Progress to longer holds over time'],posture:['Forearms on floor, elbows under shoulders','Body in straight line — head to heels','Squeeze glutes and abs simultaneously','Neutral neck — look at floor'],video:'https://www.youtube.com/results?search_query=how+to+plank+correct+form'},
+    {id:'m17',name:'Cable Crunches',icon:'🌙',sets:3,reps:'15',part:'abs',difficulty:'beginner',tips:['Round the spine — crunch towards hips','Do not pull with arms or neck','Pause and squeeze abs at bottom','Control the stretch on the way up'],posture:['Kneel in front of cable machine','Rope at sides of head, not pulling neck','Hinge at hips and spine — not just hips','Weight should challenge but not compromise form'],video:'https://www.youtube.com/results?search_query=cable+crunch+abs+form'},
+    {id:'m18',name:'Hanging Knee Raises',icon:'🏗️',sets:3,reps:'12',part:'abs',difficulty:'intermediate',tips:['Control the swing — no momentum','Bring knees to chest, not just parallel','Lower slowly — eccentric is key','For progression: straight leg raises'],posture:['Hang from bar, arms fully extended','Shoulders packed — not shrugged','Posterior tilt pelvis slightly','Exhale as you raise knees'],video:'https://www.youtube.com/results?search_query=hanging+knee+raises+form'}
+  ]},
+  {day:'Thursday',parts:['Legs','Glutes'],exercises:[
+    {id:'m19',name:'Barbell Back Squat',icon:'🏋️',sets:4,reps:'8–10',part:'legs',difficulty:'advanced',tips:['Sit back and down — like sitting into a chair','Knees track over toes throughout','Go to parallel or below','Drive through heels on the way up'],posture:['Bar on upper traps or low bar position','Chest up, slight forward lean','Feet shoulder-width, toes 15–30° out','Core braced — 360° brace'],video:'https://www.youtube.com/results?search_query=barbell+back+squat+form+tutorial'},
+    {id:'m20',name:'Romanian Deadlift',icon:'🔽',sets:3,reps:'10–12',part:'legs',difficulty:'intermediate',tips:['Push hips back — do not bend knees too much','Feel the stretch in hamstrings','Lower bar along shins','Drive hips forward to stand'],posture:['Neutral spine throughout — no rounding','Soft bend in knees','Bar stays close to body','Shoulders back and down'],video:'https://www.youtube.com/results?search_query=romanian+deadlift+form+hamstrings'},
+    {id:'m21',name:'Leg Press',icon:'🦵',sets:3,reps:'12',part:'legs',difficulty:'beginner',tips:['Place feet shoulder-width, mid-platform','Go to 90° at knees — or below','Drive through entire foot','Do not lock out knees at top'],posture:['Lower back flat against seat','Head back, looking forward','Hands on side handles','Feet parallel or slight toe-out'],video:'https://www.youtube.com/results?search_query=leg+press+proper+form+tutorial'},
+    {id:'m22',name:'Walking Lunges',icon:'🚶',sets:3,reps:'10 each leg',part:'legs',difficulty:'beginner',tips:['Step forward with big stride','Lower back knee toward floor','Push off front foot to step forward','Keep torso upright throughout'],posture:['Core tight and stable','Front knee over ankle — not past toes','Back knee hovers just off floor','Look straight ahead, not down'],video:'https://www.youtube.com/results?search_query=walking+lunges+proper+form'},
+    {id:'m23',name:'Hip Thrust',icon:'⬆️',sets:4,reps:'12',part:'legs',difficulty:'beginner',tips:['Drive hips up — squeeze glutes hard at top','Back on bench just below shoulder blades','Chin tucked, look slightly down at top','Bar on hip crease — use pad for comfort'],posture:['Feet flat, hip-width apart','Knees at 90° at top position','Ribs down — do not hyperextend lower back','Full hip extension at top'],video:'https://www.youtube.com/results?search_query=barbell+hip+thrust+form+glutes'},
+    {id:'m24',name:'Leg Curl (Machine)',icon:'🦿',sets:3,reps:'12–15',part:'legs',difficulty:'beginner',tips:['Full range of motion — straight to full curl','Squeeze hamstrings at top','Slow and controlled on way down','Do not swing or use momentum'],posture:['Lie flat, pad just above heels','Hips flat on bench','Do not lift hips to assist','Keep toes pointed down for more stretch'],video:'https://www.youtube.com/results?search_query=lying+leg+curl+machine+form'}
+  ]},
+  {day:'Friday',parts:['Chest','Arms'],exercises:[
+    {id:'m25',name:'Push-Ups (Weighted)',icon:'⬆️',sets:3,reps:'15',part:'chest',difficulty:'beginner',tips:['Add weight plate on back for challenge','Hands shoulder-width or wider','Lower until chest nearly touches floor','Full lockout at top'],posture:['Body straight from head to heels','Core and glutes squeezed','Elbows at 45° from body','Neck neutral — do not look up'],video:'https://www.youtube.com/results?search_query=weighted+push+up+form'},
+    {id:'m26',name:'Dumbbell Fly',icon:'🦅',sets:3,reps:'12',part:'chest',difficulty:'beginner',tips:['Wide arc — like hugging a tree','Keep slight bend in elbows throughout','Stretch fully at bottom','Squeeze chest at top, not arms'],posture:['Flat bench, feet on floor','Shoulder blades pinched','Lower arms until level with chest','Do not go too low — protect shoulders'],video:'https://www.youtube.com/results?search_query=dumbbell+fly+flat+bench+form'},
+    {id:'m27',name:'Preacher Curl',icon:'🪑',sets:3,reps:'10–12',part:'arms',difficulty:'beginner',tips:['Use EZ bar or dumbbell','Full extension — do not stop short','Squeeze hard at top contraction','Eliminate any swinging'],posture:['Chest against pad','Upper arm fully supported','Do not lock out harshly — control it','Keep wrists straight'],video:'https://www.youtube.com/results?search_query=preacher+curl+form+tutorial'},
+    {id:'m28',name:'Concentration Curl',icon:'🎯',sets:3,reps:'12 each',part:'arms',difficulty:'beginner',tips:['Rest elbow on inner thigh','Curl to shoulder, squeeze peak','Full extension each rep','Switch arms and repeat'],posture:['Sit on bench, lean slightly forward','Elbow on inner knee as pivot','Do not swing torso to help','Look at the muscle as you contract it'],video:'https://www.youtube.com/results?search_query=concentration+curl+form'},
+    {id:'m29',name:'Tricep Kickback',icon:'↩️',sets:3,reps:'12 each',part:'arms',difficulty:'beginner',tips:['Upper arm parallel to floor throughout','Extend arm fully behind you','Squeeze tricep at full extension','Light weight — form is everything here'],posture:['Hinge forward 45°+','Support on bench with free hand','Keep core tight and back flat','Elbow stays at side, pinned'],video:'https://www.youtube.com/results?search_query=tricep+kickback+dumbbell+form'},
+    {id:'m30',name:'Close-Grip Bench Press',icon:'🔲',sets:3,reps:'10',part:'arms',difficulty:'intermediate',tips:['Hands shoulder-width or slightly closer','Tuck elbows in — do not flare','Focus on tricep squeeze at top','Lower slowly — 3 count down'],posture:['Arch and leg drive same as bench','Bar to lower chest','Do not wrist-curl the bar','Wrists straight, forearms vertical'],video:'https://www.youtube.com/results?search_query=close+grip+bench+press+form'}
+  ]},
+  {day:'Saturday',parts:['Back','Shoulders'],exercises:[
+    {id:'m31',name:'Pull-Ups / Assisted',icon:'🏗️',sets:4,reps:'6–10',part:'back',difficulty:'intermediate',tips:['Full hang at bottom, full chin over bar at top','Shoulder-width or wider grip','Engage lats — pull elbows to hips','Use band assistance if needed'],posture:['Slight forward lean of torso','Core engaged, legs crossed behind','Chest leads to bar, not chin','Dead hang between reps if needed'],video:'https://www.youtube.com/results?search_query=pull+up+proper+form+tutorial'},
+    {id:'m32',name:'Single Arm DB Row',icon:'🚣',sets:3,reps:'10 each',part:'back',difficulty:'beginner',tips:['Plant knee and hand on bench','Pull elbow back and up — not just up','Row to hip, not chest','Let shoulder drop at bottom to stretch'],posture:['Back flat, parallel to floor','Do not rotate torso to assist','Head neutral, look down at bench','Drive elbow, not hand, upward'],video:'https://www.youtube.com/results?search_query=dumbbell+single+arm+row+form'},
+    {id:'m33',name:'Straight Arm Pulldown',icon:'⬇️',sets:3,reps:'15',part:'back',difficulty:'beginner',tips:['Arms stay straight — pure lat exercise','Pull bar to thighs in arc motion','Squeeze lats hard at bottom','Feel the stretch at top — arms overhead'],posture:['Stand back from cable machine','Hinge at hips slightly','Core braced throughout','Keep neck relaxed'],video:'https://www.youtube.com/results?search_query=straight+arm+pulldown+lat+form'},
+    {id:'m34',name:'Dumbbell Shoulder Press',icon:'🔺',sets:4,reps:'10–12',part:'shoulders',difficulty:'beginner',tips:['Press slightly in front of head','Lower to ear level or slightly below','Do not let wrists flare back','Control the descent'],posture:['Sit with back support or stand','Core engaged — no arching','Elbows at 90° at start','Press in line with ears'],video:'https://www.youtube.com/results?search_query=dumbbell+shoulder+press+form'},
+    {id:'m35',name:'Front Raises',icon:'⬆️',sets:3,reps:'12',part:'shoulders',difficulty:'beginner',tips:['Raise to shoulder height — no higher','Slight bend in elbows throughout','Alternate arms or do both','Use light-moderate weight for form'],posture:['Stand upright, core braced','Thumbs up or pronated grip','Do not use body momentum','Controlled on the way down'],video:'https://www.youtube.com/results?search_query=front+raise+shoulder+form'},
+    {id:'m36',name:'Shrugs',icon:'🤷',sets:3,reps:'15',part:'shoulders',difficulty:'beginner',tips:['Lift shoulders straight up — not forward or back','Hold at top for 1–2 seconds','Use moderate-heavy weight','Do not roll shoulders in circles'],posture:['Stand or sit upright','Arms straight, neutral grip','Breathe out as you shrug up','Core tight throughout'],video:'https://www.youtube.com/results?search_query=barbell+shrug+form+traps'}
+  ]},
+  {day:'Sunday',parts:['Full Body','Active Recovery'],exercises:[
+    {id:'m37',name:'Goblet Squat',icon:'🏺',sets:3,reps:'15',part:'full',difficulty:'beginner',tips:['Hold dumbbell or kettlebell at chest','Sit deep between your heels','Elbows touch inner thighs at bottom','Drive through whole foot to stand'],posture:['Feet shoulder-width, toes out','Chest tall throughout','Goblet (cup) in front of chest','Do not let knees cave inward'],video:'https://www.youtube.com/results?search_query=goblet+squat+form+tutorial'},
+    {id:'m38',name:'Bodyweight Row',icon:'🚣',sets:3,reps:'12',part:'full',difficulty:'beginner',tips:['Lean back — body in straight line','Pull chest to handles','Squeeze shoulder blades at top','The more horizontal, the harder'],posture:['Heels on floor, body straight','Core engaged throughout','Do not let hips drop','Controlled through full range'],video:'https://www.youtube.com/results?search_query=bodyweight+row+inverted+form'},
+    {id:'m39',name:'Mountain Climbers',icon:'⛰️',sets:3,reps:'30 sec',part:'abs',difficulty:'beginner',tips:['Drive knees alternately to chest','Keep hips level — do not bounce them','Go at a steady controlled pace','Breathe throughout — do not hold breath'],posture:['High plank position, wrists under shoulders','Body straight, core braced','Do not round upper back','Head neutral'],video:'https://www.youtube.com/results?search_query=mountain+climbers+core+form'},
+    {id:'m40',name:'Foam Rolling',icon:'🪩',sets:1,reps:'10 min',part:'full',difficulty:'beginner',tips:['Roll each major muscle group for 60–90 sec','Pause on tight/tender spots','Breathe and relax into the pressure','Calves → Quads → IT Band → Back → Lats'],posture:['Use bodyweight for pressure','Move slowly — 2 inches per second','Avoid rolling directly on joints','Relax the muscle being rolled'],video:'https://www.youtube.com/results?search_query=foam+rolling+full+body+tutorial'}
+  ]}
+];
+
+const SIS_SCHED = [
+  {day:'Monday',parts:['Arms','Abs'],exercises:[
+    {id:'s1',name:'Band Bicep Curl',icon:'💪',sets:3,reps:'15',part:'arms',difficulty:'beginner',tips:['Stand on band, curl to shoulders','Go slow — 2 up, 3 down tempo','Full extension at the bottom','Squeeze hard at the top'],posture:['Stand upright, core tight','Elbows pinned at sides','Do not swing body to assist','Wrists neutral'],video:'https://www.youtube.com/results?search_query=resistance+band+bicep+curl+form'},
+    {id:'s2',name:'Tricep Kickback',icon:'↩️',sets:3,reps:'15 each',part:'arms',difficulty:'beginner',tips:['Lean forward, upper arm parallel to floor','Extend fully — squeeze at end','Use light weights for control','Both arms or alternate'],posture:['Flat back, core braced','Elbow stays at side','No rotation of torso','Controlled motion'],video:'https://www.youtube.com/results?search_query=tricep+kickback+women+form'},
+    {id:'s3',name:'Overhead Tricep Extension',icon:'🔺',sets:3,reps:'12',part:'arms',difficulty:'beginner',tips:['Targets the long head of tricep','Keep elbows pointing up','Lower behind head slowly','Full extension at top'],posture:['Stand or sit, back straight','Elbows close to ears','Core braced — no arching','Use one dumbbell for both hands'],video:'https://www.youtube.com/results?search_query=overhead+tricep+extension+women+form'},
+    {id:'s4',name:'Crunches',icon:'🌙',sets:3,reps:'20',part:'abs',difficulty:'beginner',tips:['Lift shoulder blades off floor — not full sit-up','Exhale on the way up','Do not pull on neck with hands','Focus on contracting abs, not hip flexors'],posture:['Knees bent, feet flat on floor','Hands lightly behind head or at temples','Lower back maintains contact with floor','Look at ceiling — do not tuck chin to chest'],video:'https://www.youtube.com/results?search_query=crunches+proper+form+abs'},
+    {id:'s5',name:'Bicycle Crunches',icon:'🚲',sets:3,reps:'20',part:'abs',difficulty:'beginner',tips:['Slow and controlled — not a race','Bring elbow to opposite knee','Extend other leg fully','Keep lower back pressed to floor'],posture:['Head and shoulders lifted throughout','Hands at temples — elbows wide','Core engaged throughout','Breathe consistently'],video:'https://www.youtube.com/results?search_query=bicycle+crunches+proper+form'},
+    {id:'s6',name:'Plank',icon:'📏',sets:3,reps:'30 sec',part:'abs',difficulty:'beginner',tips:['Hold perfectly still — quality over time','Squeeze abs AND glutes together','Build up to 45–60 sec over weeks','Rest and repeat for all 3 sets'],posture:['Forearms on floor, elbows under shoulders','Body flat as a board','Do not let hips rise or sag','Head neutral — look at hands'],video:'https://www.youtube.com/results?search_query=plank+form+tutorial+beginners'}
+  ]},
+  {day:'Tuesday',parts:['Cardio','Full Body'],exercises:[
+    {id:'s7',name:'Treadmill Intervals',icon:'🏃',sets:5,reps:'1 min fast / 1 min slow',part:'full',difficulty:'beginner',tips:['Walk at 5 km/h, jog/run at 7–9 km/h','Focus on consistent breathing','Use incline (5–8%) for more calorie burn','Cool down with 3-min walk'],posture:['Upright posture — do not lean on handles','Arm swing helps momentum','Land mid-foot, not heel striking','Eyes forward, not down at screen'],video:'https://www.youtube.com/results?search_query=treadmill+interval+training+beginners'},
+    {id:'s8',name:'Jumping Jacks',icon:'⭐',sets:3,reps:'30',part:'full',difficulty:'beginner',tips:['Land softly on balls of feet','Arms fully extend overhead','Keep a steady, consistent pace','Breathe rhythmically'],posture:['Stand tall between reps','Core engaged throughout','Slight bend in knees on landing','Keep shoulders back'],video:'https://www.youtube.com/results?search_query=jumping+jacks+form+workout'},
+    {id:'s9',name:'Step-Ups',icon:'🪜',sets:3,reps:'12 each leg',part:'legs',difficulty:'beginner',tips:['Drive through the heel on the box','Stand fully on box before stepping down','Add dumbbells for progression','Alternate lead leg'],posture:['Upright posture throughout','Core tight','Controlled — no momentum','Look forward, not down'],video:'https://www.youtube.com/results?search_query=step+up+exercise+form+women'},
+    {id:'s10',name:'Modified Burpees',icon:'🌊',sets:3,reps:'10',part:'full',difficulty:'beginner',tips:['Step back one foot at a time instead of jumping','Jump up at the top with arms overhead','No push-up if too intense — modify','Build up to full burpees over weeks'],posture:['Keep back flat when in plank position','Core braced throughout','Land softly from jump','Full hip extension at top'],video:'https://www.youtube.com/results?search_query=modified+burpee+beginners+women'}
+  ]},
+  {day:'Wednesday',parts:['Arms','Shoulders'],exercises:[
+    {id:'s11',name:'Dumbbell Bicep Curl',icon:'💪',sets:3,reps:'12',part:'arms',difficulty:'beginner',tips:['Use light-moderate dumbbells','Full range of motion','Control the eccentric (down) phase','Alternate arms for mind-muscle focus'],posture:['Stand or sit upright','Elbows at sides throughout','Wrists neutral','Core tight'],video:'https://www.youtube.com/results?search_query=dumbbell+bicep+curl+women+form'},
+    {id:'s12',name:'Bench Tricep Dips',icon:'⬇️',sets:3,reps:'12',part:'arms',difficulty:'beginner',tips:['Hands behind on bench, fingers forward','Lower until elbows reach 90°','Drive back up through hands','Keep back close to bench'],posture:['Feet flat on floor, knees bent','Hips close to bench','Shoulders down — do not shrug','Look forward'],video:'https://www.youtube.com/results?search_query=bench+tricep+dips+women+beginners'},
+    {id:'s13',name:'Lateral Raises',icon:'↔️',sets:3,reps:'15',part:'shoulders',difficulty:'beginner',tips:['Use very light dumbbells — control is key','Raise to shoulder height only','Lead with elbows','Slow and controlled always'],posture:['Stand tall, slight hip hinge','Thumbs slightly down','Do not shrug at top','Core engaged'],video:'https://www.youtube.com/results?search_query=lateral+raises+women+form'},
+    {id:'s14',name:'Front Raise',icon:'⬆️',sets:3,reps:'12',part:'shoulders',difficulty:'beginner',tips:['Alternate arms for control','Raise to shoulder height','Slight bend in elbows','Slow down phase'],posture:['Stand upright','Core tight','Do not swing','Wrists neutral'],video:'https://www.youtube.com/results?search_query=front+raise+women+shoulder+form'},
+    {id:'s15',name:'Arm Circles',icon:'🔄',sets:2,reps:'30 each direction',part:'arms',difficulty:'beginner',tips:['Keep arms at shoulder height throughout','Small to large circles','Both directions equally','Good for shoulder mobility and toning'],posture:['Stand tall, arms straight out to sides','Core engaged','Neck relaxed','Breathe normally'],video:'https://www.youtube.com/results?search_query=arm+circles+exercise+toning'}
+  ]},
+  {day:'Thursday',parts:['Lower Body','Abs'],exercises:[
+    {id:'s16',name:'Glute Bridge',icon:'⬆️',sets:4,reps:'15',part:'legs',difficulty:'beginner',tips:['Squeeze glutes hard at top — 1 sec hold','Lower slowly and with control','Progress to single-leg glute bridge','Drive through heels not toes'],posture:['Lie on back, knees bent, feet flat','Feet hip-width apart','Arms at sides on floor','Do not hyperextend lower back at top'],video:'https://www.youtube.com/results?search_query=glute+bridge+proper+form+women'},
+    {id:'s17',name:'Sumo Squat',icon:'🦵',sets:3,reps:'15',part:'legs',difficulty:'beginner',tips:['Wide stance, toes pointed out 45°','Targets inner thighs and glutes','Lower until thighs are parallel','Hold dumbbell for added resistance'],posture:['Chest up, core tight','Knees track over toes','Do not cave knees inward','Drive through heels to stand'],video:'https://www.youtube.com/results?search_query=sumo+squat+women+form'},
+    {id:'s18',name:'Donkey Kicks',icon:'🦵',sets:3,reps:'15 each',part:'legs',difficulty:'beginner',tips:['Drive heel toward ceiling — squeeze glute at top','Keep hips square to the floor','Controlled motion both ways','Add ankle weight for progression'],posture:['On all fours — wrists under shoulders, knees under hips','Back flat — no sagging or arching','Core braced throughout','Head neutral'],video:'https://www.youtube.com/results?search_query=donkey+kicks+form+glutes+women'},
+    {id:'s19',name:'Leg Raises',icon:'⬆️',sets:3,reps:'15',part:'abs',difficulty:'beginner',tips:['Keep legs as straight as possible','Lower legs slowly — eccentric matters','Do not let heels touch the floor','Press lower back into mat throughout'],posture:['Lie flat on back','Hands under glutes for support','Core braced — no gap under lower back','Breathe out as you raise'],video:'https://www.youtube.com/results?search_query=leg+raises+lower+abs+form'},
+    {id:'s20',name:'Russian Twists',icon:'🌀',sets:3,reps:'20 total',part:'abs',difficulty:'beginner',tips:['Lean back slightly to activate core','Rotate fully to each side','Hold dumbbell or medicine ball for intensity','Do not rush — control the twist'],posture:['Sit with knees bent, heels slightly raised','Back at 45° angle to floor','Keep chest lifted','Shoulders move, not just arms'],video:'https://www.youtube.com/results?search_query=russian+twists+abs+form+women'}
+  ]},
+  {day:'Friday',parts:['Arms','Cardio'],exercises:[
+    {id:'s21',name:'Knee Push-Ups',icon:'⬆️',sets:3,reps:'12',part:'arms',difficulty:'beginner',tips:['Hands slightly wider than shoulders','Lower chest to floor','Full extension at top','Progress to full push-ups'],posture:['Knees on floor, hips in line with shoulders','Do not let hips sag or pike up','Core tight throughout','Head neutral'],video:'https://www.youtube.com/results?search_query=knee+push+up+modified+form+women'},
+    {id:'s22',name:'Tricep Push-Ups',icon:'🔺',sets:3,reps:'10',part:'arms',difficulty:'beginner',tips:['Hands close together (narrow stance)','Elbows hug ribs on the way down','Targets triceps more than standard push-up','Modify on knees if needed'],posture:['Body straight line (or knees down)','Elbows pointing back not out','Controlled descent and press up','Breathe out on push up'],video:'https://www.youtube.com/results?search_query=tricep+push+up+close+grip+form'},
+    {id:'s23',name:'High Knees / Jump Rope',icon:'⭕',sets:4,reps:'1 min',part:'full',difficulty:'beginner',tips:['Drive knees to hip height','Pump arms opposite to legs','Stay on balls of feet throughout','Breathe through it consistently'],posture:['Upright posture','Core engaged','Land softly each time','Keep shoulders relaxed'],video:'https://www.youtube.com/results?search_query=high+knees+cardio+form'},
+    {id:'s24',name:'Battle Rope Waves',icon:'🌊',sets:3,reps:'30 sec',part:'arms',difficulty:'beginner',tips:['Alternate arm waves up and down','Start with controlled tempo','Keep knees slightly bent and core tight','Great for arms and cardio combined'],posture:['Athletic stance — feet hip-width','Hinge slightly at hips','Do not round the back','Power from arms and slight shoulder drive'],video:'https://www.youtube.com/results?search_query=battle+rope+waves+form+beginners'}
+  ]},
+  {day:'Saturday',parts:['Full Body','Tummy Focus'],exercises:[
+    {id:'s25',name:'Kettlebell Swing',icon:'🏺',sets:4,reps:'15',part:'full',difficulty:'beginner',tips:['Power comes from hip hinge, not squat','Swing to shoulder height','Squeeze glutes at top — hips fully open','Let bell swing back between legs, hinge again'],posture:['Feet shoulder-width','Hip hinge — push hips back','Back flat — do not round','Core and lats braced at top'],video:'https://www.youtube.com/results?search_query=kettlebell+swing+form+beginners'},
+    {id:'s26',name:'Dead Bug',icon:'🐛',sets:3,reps:'10 each side',part:'abs',difficulty:'beginner',tips:['Move opposite arm and leg simultaneously','Press lower back firmly to floor throughout','Move SLOW — this is a core stability exercise','Breathe out as limbs extend'],posture:['Lie on back, arms pointing to ceiling','Knees at 90° (table top position)','Lower back NEVER leaves floor','Core braced the entire time'],video:'https://www.youtube.com/results?search_query=dead+bug+exercise+core+form'},
+    {id:'s27',name:'Flutter Kicks',icon:'🦵',sets:3,reps:'30 sec',part:'abs',difficulty:'beginner',tips:['Keep legs as low as you can without back lift','Small rapid kicks — constant movement','Do not hold breath','Progress to lower height over time'],posture:['Lie flat, hands under glutes','Legs straight or slight bend','Lower back pressed to mat','Head and shoulders slightly lifted'],video:'https://www.youtube.com/results?search_query=flutter+kicks+core+abs+form'},
+    {id:'s28',name:'Side Plank',icon:'↗️',sets:2,reps:'20 sec each side',part:'abs',difficulty:'beginner',tips:['Great for obliques — the side abs','Stack feet or stagger for easier modification','Keep hips lifted — do not let them sag','Build to 30–45 sec each side'],posture:['Elbow under shoulder','Body in straight line from head to feet','Lift hips off floor','Breathe consistently'],video:'https://www.youtube.com/results?search_query=side+plank+form+obliques+women'}
+  ]},
+  {day:'Sunday',parts:['Yoga','Stretch'],exercises:[
+    {id:'s29',name:'Cat-Cow Stretch',icon:'🐱',sets:1,reps:'10 reps',part:'full',difficulty:'beginner',tips:['Inhale on cow (back arched, belly down)','Exhale on cat (back rounded, belly in)','Move slowly and deliberately','Connect breath to movement'],posture:['On all fours — wrists under shoulders, knees under hips','Neutral spine starting position','Move from the pelvis and spine — not just neck','Soft elbows throughout'],video:'https://www.youtube.com/results?search_query=cat+cow+stretch+yoga+form'},
+    {id:'s30',name:"Child's Pose",icon:'🧘',sets:1,reps:'60 sec',part:'full',difficulty:'beginner',tips:['Walk hands out for deeper shoulder stretch','Breathe deeply into lower back','Knees wide or together — both work','Rest forehead on mat'],posture:['Hips towards heels (or as close as possible)','Arms extended or alongside body','Relax jaw and shoulders','Deep, slow breathing'],video:'https://www.youtube.com/results?search_query=childs+pose+yoga+form'},
+    {id:'s31',name:'Hip Flexor Stretch',icon:'🦵',sets:1,reps:'30 sec each',part:'legs',difficulty:'beginner',tips:['Drive hips forward gently','Feel the stretch in front of hip/thigh','Keep back knee comfortable on floor','Great for desk workers and gym goers'],posture:['Low lunge position — back knee on floor','Front foot flat, knee over ankle','Upright torso, hands on front knee or up overhead','Tuck pelvis slightly for deeper stretch'],video:'https://www.youtube.com/results?search_query=hip+flexor+stretch+kneeling+form'},
+    {id:'s32',name:'Full Body Yoga Flow',icon:'🌊',sets:1,reps:'10 min',part:'full',difficulty:'beginner',tips:['Follow a YouTube yoga video for guidance','Focus on areas that feel tight','Sun salutations are a great option','Intention: relaxation and recovery'],posture:['Listen to your body — never force a pose','Breathe through discomfort, not pain','Modify any pose that does not feel right','End in savasana (lying flat, eyes closed)'],video:'https://www.youtube.com/results?search_query=yoga+for+beginners+full+body+recovery+flow'}
+  ]}
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let S = {
+  profile:'me', dayIdx:0, view:'day',
+  setsDone:{}, daysDone:{me:new Set(),sister:new Set()},
+  streaks:{me:0,sister:0}, notes:{}, rescheduled:{},
+  weights:{me:[],sister:[]},
+  gymDays:{me:new Set(),sister:new Set()},
+  wtProfile:'me'
+};
+
+try {
+  const saved = localStorage.getItem('gymbuddy_v3');
+  if(saved){
+    const p=JSON.parse(saved);
+    S.setsDone=p.setsDone||{};
+    S.notes=p.notes||{};
+    S.daysDone={me:new Set(p.daysDone?.me||[]),sister:new Set(p.daysDone?.sister||[])};
+    S.streaks=p.streaks||{me:0,sister:0};
+    S.rescheduled=p.rescheduled||{};
+    S.weights={me:p.weights?.me||[],sister:p.weights?.sister||[]};
+    S.gymDays={me:new Set(p.gymDays?.me||[]),sister:new Set(p.gymDays?.sister||[])};
+  }
+} catch(e){}
+
+function save(){
+  try{localStorage.setItem('gymbuddy_v3',JSON.stringify({
+    setsDone:S.setsDone,notes:S.notes,
+    daysDone:{me:[...S.daysDone.me],sister:[...S.daysDone.sister]},
+    streaks:S.streaks,rescheduled:S.rescheduled,
+    weights:S.weights,
+    gymDays:{me:[...S.gymDays.me],sister:[...S.gymDays.sister]}
+  }));}catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function todayStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dayOfMonth(){return new Date().getDate();}
+function monthPrefix(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function gymCountThisMonth(p){return[...S.gymDays[p]].filter(d=>d.startsWith(monthPrefix())).length;}
+
+// ═══════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goBack(id){showScreen(id);if(id==='landing')updateLanding();}
+
+function openProfile(who){
+  S.profile=who;
+  const isMe=who==='me';
+  // mark gym day
+  S.gymDays[who].add(todayStr());
+  save();
+  document.getElementById('ph-title').textContent=isMe?"Venky's Workouts":"Anchita's Workouts";
+  const av=document.getElementById('ph-avatar');
+  av.textContent=isMe?'V':'A';
+  av.style.cssText=isMe?'background:rgba(232,255,71,0.15);color:var(--accent);border:2px solid rgba(232,255,71,0.3);':'background:rgba(255,107,53,0.15);color:var(--accent2);border:2px solid rgba(255,107,53,0.3);';
+  // attendance chip
+  const cnt=gymCountThisMonth(who);
+  const dom=dayOfMonth();
+  document.getElementById('ph-attendance').textContent=`${cnt}/${dom}`;
+  document.getElementById('ph-attendance').style.color=isMe?'var(--accent)':'var(--accent2)';
+  switchTab('day');
+  showScreen('profile-home');
+  updateLanding();
+}
+
+function switchTab(tab){
+  S.view=tab;
+  const isMe=S.profile==='me';
+  document.getElementById('tab-day').className='tab-btn'+(tab==='day'?' active'+(isMe?'':' orange'):'');
+  document.getElementById('tab-bp').className='tab-btn'+(tab==='bodypart'?' active'+(isMe?'':' orange'):'');
+  document.getElementById('view-day').style.display=tab==='day'?'block':'none';
+  document.getElementById('view-bodypart').style.display=tab==='bodypart'?'block':'none';
+  if(tab==='day') renderDaysList();
+  else renderBPList();
+}
+
+// ═══════════════════════════════════════════
+// WEIGHT
+// ═══════════════════════════════════════════
+function openWeightModal(evt,who){
+  evt.stopPropagation();
+  S.wtProfile=who;
+  document.getElementById('wt-modal-title').textContent=`⚖️ Log Weight — ${who==='me'?'Venky':'Anchita'}`;
+  document.getElementById('weight-input').value='';
+  document.getElementById('weight-modal').classList.add('open');
+}
+function closeWeightModal(){document.getElementById('weight-modal').classList.remove('open');}
+function saveWeight(){
+  const v=parseFloat(document.getElementById('weight-input').value);
+  if(!v||v<30||v>300){alert('Please enter a valid weight (30–300 kg)');return;}
+  const p=S.wtProfile;
+  const ds=todayStr();
+  S.weights[p]=S.weights[p].filter(w=>w.date!==ds);
+  S.weights[p].unshift({date:ds,kg:v});
+  if(S.weights[p].length>10)S.weights[p]=S.weights[p].slice(0,10);
+  save();
+  closeWeightModal();
+  updateLanding();
+}
+function renderWeightHistory(p){
+  const prefix=p==='me'?'me':'sis';
+  const el=document.getElementById(`${prefix}-wt-history`);
+  const entries=S.weights[p].slice(0,3);
+  const isMe=p==='me';
+  if(!entries.length){el.innerHTML='<div class="wt-empty">Tap ⚖️ to log</div>';return;}
+  el.innerHTML=entries.map((w,i)=>{
+    const color=i===0?(isMe?'var(--accent)':'var(--accent2)'):'var(--text)';
+    const parts=w.date.split('-');
+    return `<div class="wt-entry"><span class="wt-val" style="color:${color}">${w.kg}kg</span><span class="wt-date">${parts[2]}/${parts[1]}</span></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// LANDING STATS
+// ═══════════════════════════════════════════
+function updateLanding(){
+  ['me','sister'].forEach(p=>{
+    const px=p==='me'?'me':'sis';
+    const done=S.daysDone[p].size;
+    const pct=Math.round((done/7)*100);
+    document.getElementById(`${px}-days-done`).textContent=done;
+    document.getElementById(`${px}-streak`).textContent=(S.streaks[p]||0)+'🔥';
+    document.getElementById(`${px}-pct`).textContent=pct+'%';
+    document.getElementById(`${px}-bar`).style.width=pct+'%';
+    // gym days badge
+    const cnt=gymCountThisMonth(p);
+    const dom=dayOfMonth();
+    document.getElementById(`${px}-gym-count`).textContent=`${cnt}/${dom}`;
+    renderWeightHistory(p);
+  });
+}
+
+// ═══════════════════════════════════════════
+// DAYS LIST
+// ═══════════════════════════════════════════
+function getSched(){return S.profile==='me'?ME_SCHED:SIS_SCHED;}
+function getDayPct(p,i){
+  const sched=p==='me'?ME_SCHED:SIS_SCHED;
+  const day=sched[i];if(!day)return 0;
+  const all=[...WARMUP,...day.exercises,...COOLDOWN];
+  const total=all.reduce((s,e)=>s+(e.sets===1?1:e.sets),0);
+  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${i}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
+  return total===0?0:Math.round((done/total)*100);
+}
+
+function renderDaysList(){
+  const list=document.getElementById('days-list');
+  const sched=getSched();
+  const p=S.profile;const isMe=p==='me';
+  list.innerHTML=sched.map((d,i)=>{
+    const isToday=i===TODAY_IDX;
+    const pct=getDayPct(p,i);
+    const isDone=pct===100;
+    const isMissed=i<TODAY_IDX&&pct>0&&pct<100;
+    let cls='day-card';
+    let icon='›';
+    if(isDone){cls+=' completed';icon='✅';}
+    else if(isToday){cls+=' today';icon='📍';}
+    else if(isMissed){cls+=' missed';icon='⚠️';}
+    const chips=d.parts.map(pt=>{
+      const k=pt.toLowerCase().replace(/[^a-z]/g,'').substring(0,8);
+      return`<span class="part-chip chip-${k}">${pt}</span>`;
+    }).join('');
+    const fill=isDone?'#34d399':(isMe?'var(--accent)':'var(--accent2)');
+    return`<div class="${cls}" onclick="openDay(${i})">
+      <div class="day-left">
+        <div class="day-name">${d.day.substring(0,3).toUpperCase()}</div>
+        ${isToday?'<div class="today-tag">TODAY</div>':''}
+      </div>
+      <div class="day-mid">
+        <div class="day-parts-row">${chips}</div>
+        <div class="day-progress-mini"><div class="day-progress-mini-fill" style="width:${pct}%;background:${fill}"></div></div>
+      </div>
+      <div class="day-right">
+        <div class="day-status-icon">${icon}</div>
+        <div class="day-pct-text">${pct>0?pct+'%':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// BODY PART LIST
+// ═══════════════════════════════════════════
+const BPM={
+  chest:{icon:'🫁',color:'chest',label:'Chest'},back:{icon:'🔙',color:'back',label:'Back'},
+  arms:{icon:'💪',color:'arms',label:'Arms'},legs:{icon:'🦵',color:'legs',label:'Legs'},
+  shoulders:{icon:'🏔️',color:'shoulders',label:'Shoulders'},abs:{icon:'⭕',color:'abs',label:'Core & Abs'},
+  full:{icon:'⚡',color:'full',label:'Full Body'},
+};
+function renderBPList(){
+  const sched=getSched();
+  const parts={};
+  sched.forEach(d=>d.exercises.forEach(e=>{
+    if(!parts[e.part])parts[e.part]={exs:[],days:[]};
+    if(!parts[e.part].exs.find(x=>x.id===e.id))parts[e.part].exs.push(e);
+    if(!parts[e.part].days.includes(d.day))parts[e.part].days.push(d.day);
+  }));
+  document.getElementById('bp-list').innerHTML=Object.entries(parts).map(([part,data])=>{
+    const m=BPM[part]||{icon:'💪',color:'full',label:part};
+    return`<div class="bodypart-card" onclick="openBodyPart('${part}')">
+      <div class="bp-icon bg-${m.color}">${m.icon}</div>
+      <div class="bp-info"><div class="bp-name color-${m.color}">${m.label}</div><div class="bp-count">${data.exs.length} exercises · ${data.days.join(', ')}</div></div>
+      <div class="bp-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+function openBodyPart(part){
+  const sched=getSched();
+  const i=sched.findIndex(d=>d.exercises.some(e=>e.part===part));
+  if(i>=0)openDay(i,part);
+}
+
+// ═══════════════════════════════════════════
+// SESSION
+// ═══════════════════════════════════════════
+function openDay(i,filterPart){
+  S.dayIdx=i;
+  const sched=getSched();
+  const day=sched[i];
+  document.getElementById('session-title').textContent=`${day.day} — ${day.parts.join(' & ')}`;
+  renderSession(filterPart);
+  showScreen('workout-session');
+}
+function exKey(id){return`${S.profile}_${S.dayIdx}_${id}`;}
+
+function renderSession(filterPart){
+  const sched=getSched();
+  const day=sched[S.dayIdx];
+  const p=S.profile;const isMe=p==='me';
+  let exs=filterPart?day.exercises.filter(e=>e.part===filterPart):day.exercises;
+  const sections=[
+    ...(filterPart?[]:[ {label:'Warm Up',icon:'🔥',tag:'~15 min',cls:'warmup',exercises:WARMUP} ]),
+    ...Object.entries(exs.reduce((acc,e)=>{if(!acc[e.part])acc[e.part]=[];acc[e.part].push(e);return acc;},{}))
+      .map(([part,exArr])=>{const m=BPM[part]||{icon:'💪',color:'full',label:part};return{label:m.label,icon:m.icon,tag:'Main Work',cls:m.color,exercises:exArr};}),
+    ...(filterPart?[]:[ {label:'Cool Down',icon:'❄️',tag:'~5 min',cls:'abs',exercises:COOLDOWN} ])
+  ];
+  const content=document.getElementById('session-content');
+  content.innerHTML=sections.map(sec=>`
+    <div>
+      <div class="section-header bg-${sec.cls}"><span class="section-icon">${sec.icon}</span><span class="section-label color-${sec.cls}">${sec.label}</span><span class="section-tag chip-${sec.cls}">${sec.tag}</span></div>
+      ${sec.exercises.map(ex=>renderExCard(ex,sec.cls)).join('')}
+    </div>`).join('');
+
+  content.querySelectorAll('.set-circle').forEach(c=>{
+    c.addEventListener('click',function(){
+      const key=this.dataset.key;const idx=parseInt(this.dataset.idx);
+      if(!S.setsDone[key])S.setsDone[key]=[];
+      S.setsDone[key][idx]=!S.setsDone[key][idx];
+      this.classList.toggle('done',!!S.setsDone[key][idx]);
+      this.textContent=S.setsDone[key][idx]?'✓':(idx+1);
+      updateProgress();checkComplete();save();
+    });
+  });
+  content.querySelectorAll('.instr-tab').forEach(tab=>{
+    tab.addEventListener('click',function(){
+      const panel=this.closest('.instruction-panel');
+      panel.querySelectorAll('.instr-tab').forEach(t=>t.classList.remove('active'));
+      panel.querySelectorAll('.instr-pane').forEach(pp=>pp.classList.remove('active'));
+      this.classList.add('active');
+      panel.querySelector(`.instr-pane[data-pane="${this.dataset.tab}"]`).classList.add('active');
+    });
+  });
+  content.querySelectorAll('.exercise-header').forEach(h=>{
+    h.addEventListener('click',function(){this.closest('.exercise-card').classList.toggle('expanded');});
+  });
+  content.querySelectorAll('.notes-input').forEach(input=>{
+    const key=input.dataset.key;
+    input.value=S.notes[key]||'';
+    input.addEventListener('input',function(){S.notes[key]=this.value;save();});
+  });
+  updateProgress();
+}
+
+function renderExCard(ex,colorCls){
+  const key=exKey(ex.id);
+  const done=S.setsDone[key]||[];
+  const n=ex.sets===1?1:ex.sets;
+  const allDone=done.filter(Boolean).length===n;
+  const imgs=EX_IMGS[ex.id]||{gif:'',static:''};
+  const circles=Array.from({length:n},(_,i)=>`
+    <div class="set-circle ${done[i]?'done':''}" data-key="${key}" data-idx="${i}">${done[i]?'✓':i+1}</div>`).join('');
+  const tipsHtml=(ex.tips||[]).map(t=>`<li>${t}</li>`).join('');
+  const postureTextHtml=(ex.posture||[]).map(t=>`<li>${t}</li>`).join('');
+  return`<div class="exercise-card ${allDone?'all-done':''}">
+    <div class="exercise-header">
+      <div class="exercise-icon bg-${colorCls}">${ex.icon}</div>
+      <div class="exercise-meta">
+        <div class="exercise-name">${ex.name}</div>
+        <div class="exercise-detail">${ex.sets} set${ex.sets>1?'s':''} · ${ex.reps}</div>
+        <div class="exercise-tags">
+          <span class="diff-tag diff-${ex.difficulty}">${ex.difficulty}</span>
+          ${allDone?'<span class="diff-tag" style="color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08)">✓ Done</span>':''}
+        </div>
+      </div>
+      <div class="expand-icon">▾</div>
+    </div>
+    <div class="sets-row"><span class="sets-label">Sets:</span>${circles}</div>
+    <textarea class="notes-input" data-key="${key}_notes" placeholder="📝 Log weight used — e.g. 40kg" rows="1"></textarea>
+    <div class="instruction-panel">
+      <div class="instruction-tabs">
+        <button class="instr-tab active" data-tab="tips">Tips</button>
+        <button class="instr-tab" data-tab="posture">Posture</button>
+        <button class="instr-tab" data-tab="video">Video</button>
+      </div>
+      <div class="instr-content">
+        <div class="instr-pane active" data-pane="tips"><ul class="instr-list">${tipsHtml}</ul></div>
+        <div class="instr-pane" data-pane="posture">
+          <div class="posture-images">
+            <div class="posture-img-wrap" id="pw-${ex.id}-a">
+              <img src="${imgs.gif}" alt="${ex.name} start position" loading="lazy"
+                onload="this.parentElement.querySelector('.posture-img-label').style.display='block'"
+                onerror="this.parentElement.style.display='none'">
+              <div class="posture-img-label" style="display:none">START POSITION</div>
+            </div>
+            <div class="posture-img-wrap" id="pw-${ex.id}-b">
+              <img src="${imgs.static}" alt="${ex.name} end position" loading="lazy"
+                onload="this.parentElement.querySelector('.posture-img-label').style.display='block'"
+                onerror="this.parentElement.style.display='none'">
+              <div class="posture-img-label" style="display:none">END POSITION</div>
+            </div>
+          </div>
+          <ul class="instr-list">${postureTextHtml}</ul>
+        </div>
+        <div class="instr-pane" data-pane="video">
+          <a class="video-link" href="${ex.video}" target="_blank">
+            <span class="yt-icon">▶️</span>
+            <span>Watch: How to do ${ex.name}</span>
+            <span class="ext">↗</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateProgress(){
+  const sched=getSched();
+  const day=sched[S.dayIdx];
+  const p=S.profile;const isMe=p==='me';
+  const all=[...WARMUP,...day.exercises,...COOLDOWN];
+  const total=all.reduce((s,e)=>s+(e.sets===1?1:e.sets),0);
+  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${S.dayIdx}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
+  const pct=total===0?0:Math.round((done/total)*100);
+  const fill=document.getElementById('session-progress-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct===100?'#34d399':(isMe?'var(--accent)':'var(--accent2)');
+  const pctEl=document.getElementById('session-progress-pct');
+  pctEl.textContent=pct+'%';
+  pctEl.style.color=pct===100?'#34d399':(isMe?'var(--accent)':'var(--accent2)');
+}
+
+function checkComplete(){
+  const sched=getSched();
+  const day=sched[S.dayIdx];
+  const p=S.profile;
+  const all=[...WARMUP,...day.exercises,...COOLDOWN];
+  const total=all.reduce((s,e)=>s+(e.sets===1?1:e.sets),0);
+  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${S.dayIdx}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
+  if(done===total){
+    S.daysDone[p].add(S.dayIdx);
+    let streak=0;
+    for(let i=TODAY_IDX;i>=0;i--){if(S.daysDone[p].has(i))streak++;else break;}
+    S.streaks[p]=streak;
+    updateLanding();
+    let banner=document.querySelector('.session-done-banner');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.className='session-done-banner';
+      banner.innerHTML='<div class="done-emoji">🎉</div><div class="done-text">Workout Complete!</div><div class="done-sub">You crushed it today! 💪</div>';
+      document.getElementById('session-content').appendChild(banner);
+    }
+    banner.classList.add('visible');
+  }
+}
+
+// ═══════════════════════════════════════════
+// RESCHEDULE
+// ═══════════════════════════════════════════
+function openReschedule(){
+  const sched=getSched();
+  const cur=S.dayIdx;
+  document.getElementById('reschedule-options').innerHTML=sched.map((d,i)=>i!==cur?`
+    <div class="modal-day-option" onclick="rescheduleToDay(${cur},${i})">
+      <span>${d.day}</span>
+      <span class="part-chip chip-${(d.parts[0]||'full').toLowerCase().replace(/[^a-z]/g,'').substring(0,8)}">${d.parts.join(' + ')}</span>
+    </div>`:''
+  ).filter(Boolean).join('');
+  document.getElementById('reschedule-modal').classList.add('open');
+}
+function closeReschedule(){document.getElementById('reschedule-modal').classList.remove('open');}
+function rescheduleToDay(from,to){
+  S.rescheduled[from]=to;closeReschedule();
+  S.dayIdx=to;
+  const sched=getSched();const day=sched[to];
+  document.getElementById('session-title').textContent=`${day.day} — ${day.parts.join(' & ')} (Rescheduled)`;
+  renderSession();save();
+}
+
+// INIT
+updateLanding();
+</script>
+</body>
+</html>
 
