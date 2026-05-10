@@ -98,6 +98,10 @@
   .attendance-chip{display:flex;flex-direction:column;align-items:center;}
   .attendance-num{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--accent);}
   .attendance-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;}
+  .swim-chip{display:flex;flex-direction:column;align-items:center;cursor:pointer;background:rgba(71,200,255,0.1);border:1px solid rgba(71,200,255,0.25);border-radius:10px;padding:5px 9px;transition:background 0.15s;}
+  .swim-chip:active{background:rgba(71,200,255,0.2);}
+  .swim-num{font-family:'Bebas Neue',sans-serif;font-size:16px;line-height:1;color:var(--back);}
+  .swim-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-top:1px;}
 
   .view-tabs{display:flex;gap:8px;padding:14px 20px 10px;}
   .tab-btn{flex:1;padding:11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;text-align:center;}
@@ -344,6 +348,20 @@
   </div>
 </div>
 
+<!-- SWIM LOG MODAL -->
+<div class="modal-overlay" id="swim-modal">
+  <div class="modal-sheet">
+    <div class="modal-title" id="swim-modal-title">🏊 Log Swim Session</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Optional — fill in what you tracked today</div>
+    <input class="modal-input" id="swim-laps" type="number" placeholder="Laps completed (e.g. 20)" min="1" max="500">
+    <input class="modal-input" id="swim-duration" type="number" placeholder="Duration in minutes (e.g. 45)" min="1" max="300">
+    <input class="modal-input" id="swim-distance" type="number" placeholder="Distance in metres (e.g. 500)" min="10" max="10000">
+    <div id="swim-history-wrap" style="margin-bottom:12px;"></div>
+    <button class="modal-save" onclick="saveSwim()">Log Swim ✓</button>
+    <button class="modal-cancel" onclick="closeSwimModal()">Cancel</button>
+  </div>
+</div>
+
 <!-- PROFILE HOME -->
 <div class="screen" id="profile-home">
   <div class="top-bar">
@@ -353,6 +371,10 @@
       <div class="attendance-chip">
         <div class="attendance-num" id="ph-attendance">0/1</div>
         <div class="attendance-lbl">This Month</div>
+      </div>
+      <div class="swim-chip" onclick="logSwim()" title="Log swim session">
+        <div class="swim-num" id="ph-swim">🏊 0</div>
+        <div class="swim-lbl">Swims</div>
       </div>
       <div class="top-bar-avatar" id="ph-avatar"></div>
     </div>
@@ -695,6 +717,7 @@ let S = {
   streaks:{me:0,sister:0}, notes:{}, rescheduled:{},
   weights:{me:[],sister:[]},
   gymDays:{me:new Set(),sister:new Set()},
+  swims:{me:[],sister:[]},
   wtProfile:'me'
 };
 
@@ -709,6 +732,7 @@ try {
     S.rescheduled=p.rescheduled||{};
     S.weights={me:p.weights?.me||[],sister:p.weights?.sister||[]};
     S.gymDays={me:new Set(p.gymDays?.me||[]),sister:new Set(p.gymDays?.sister||[])};
+    S.swims={me:p.swims?.me||[],sister:p.swims?.sister||[]};
   }
 } catch(e){}
 
@@ -718,7 +742,8 @@ function save(){
     daysDone:{me:[...S.daysDone.me],sister:[...S.daysDone.sister]},
     streaks:S.streaks,rescheduled:S.rescheduled,
     weights:S.weights,
-    gymDays:{me:[...S.gymDays.me],sister:[...S.gymDays.sister]}
+    gymDays:{me:[...S.gymDays.me],sister:[...S.gymDays.sister]},
+    swims:S.swims
   }));}catch(e){}
 }
 
@@ -759,6 +784,7 @@ function openProfile(who){
   document.getElementById('ph-attendance').textContent=`${cnt}/${dom}`;
   document.getElementById('ph-attendance').style.color=isMe?'var(--accent)':'var(--accent2)';
   switchTab('day');
+  updateSwimChip();
   showScreen('profile-home');
   updateLanding();
 }
@@ -806,6 +832,63 @@ function renderWeightHistory(p){
 // ═══════════════════════════════════════════
 // LANDING STATS
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// SWIMMING
+// ═══════════════════════════════════════════
+function swimCountThisMonth(p){
+  return S.swims[p].filter(s=>s.date.startsWith(monthPrefix())).length;
+}
+
+function updateSwimChip(){
+  const p=S.profile;
+  const count=swimCountThisMonth(p);
+  document.getElementById('ph-swim').textContent=`🏊 ${count}`;
+}
+
+function logSwim(){
+  const p=S.profile;
+  document.getElementById('swim-modal-title').textContent=`🏊 Log Swim — ${p==='me'?'Venky':'Anchita'}`;
+  document.getElementById('swim-laps').value='';
+  document.getElementById('swim-duration').value='';
+  document.getElementById('swim-distance').value='';
+  // Show last 3 swims
+  const recent=S.swims[p].slice(0,3);
+  const wrap=document.getElementById('swim-history-wrap');
+  if(recent.length){
+    wrap.innerHTML=`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Recent sessions</div>`+
+    recent.map(s=>{
+      const parts=s.date.split('-');
+      const label=`${parts[2]}/${parts[1]}`;
+      const details=[s.laps?`${s.laps} laps`:'',s.duration?`${s.duration} min`:'',s.distance?`${s.distance}m`:''].filter(Boolean).join(' · ')||'Logged';
+      return`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+        <span style="color:var(--back)">${details}</span>
+        <span style="color:var(--muted)">${label}</span>
+      </div>`;
+    }).join('');
+  } else {
+    wrap.innerHTML='';
+  }
+  document.getElementById('swim-modal').classList.add('open');
+}
+
+function closeSwimModal(){document.getElementById('swim-modal').classList.remove('open');}
+
+function saveSwim(){
+  const p=S.profile;
+  const laps=parseInt(document.getElementById('swim-laps').value)||null;
+  const duration=parseInt(document.getElementById('swim-duration').value)||null;
+  const distance=parseInt(document.getElementById('swim-distance').value)||null;
+  const ds=todayStr();
+  // Remove existing entry for today
+  S.swims[p]=S.swims[p].filter(s=>s.date!==ds);
+  S.swims[p].unshift({date:ds,laps,duration,distance});
+  if(S.swims[p].length>30) S.swims[p]=S.swims[p].slice(0,30);
+  save();
+  closeSwimModal();
+  updateSwimChip();
+  updateLanding();
+}
+
 function updateLanding(){
   ['me','sister'].forEach(p=>{
     const px=p==='me'?'me':'sis';
@@ -1201,6 +1284,7 @@ function getDataForSync(){
     rescheduled: S.rescheduled,
     weights: S.weights,
     gymDays: {me:[...S.gymDays.me], sister:[...S.gymDays.sister]},
+    swims: S.swims,
     lastUpdated: new Date().toISOString()
   }, null, 2);
 }
@@ -1244,6 +1328,7 @@ async function syncFromGist(showAlert){
     S.rescheduled = p.rescheduled || S.rescheduled;
     S.weights = p.weights || S.weights;
     S.gymDays = {me:new Set(p.gymDays?.me||[...S.gymDays.me]), sister:new Set(p.gymDays?.sister||[...S.gymDays.sister])};
+    S.swims = {me:p.swims?.me||S.swims.me, sister:p.swims?.sister||S.swims.sister};
     save();
     updateLanding();
     const now = new Date().toLocaleString();
