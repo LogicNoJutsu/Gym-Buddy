@@ -207,6 +207,8 @@
   .done-text{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#34d399;margin-top:6px;}
   .done-sub{font-size:13px;color:var(--muted);margin-top:4px;}
 
+  .skip-btn{font-size:14px;cursor:pointer;opacity:0.5;padding:2px 4px;border-radius:6px;transition:opacity 0.15s;}
+  .skip-btn:active{opacity:1;}
   /* SETTINGS */
   .settings-section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--accent);}
   .settings-section-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
@@ -574,7 +576,7 @@ const EX_IMGS = {
 // ═══════════════════════════════════════════
 // WORKOUT DATA
 // ═══════════════════════════════════════════
-const TODAY_IDX = new Date().getDay()===0?6:new Date().getDay()-1;
+// Date-based rolling cycle — TODAY_IDX no longer used
 
 const WARMUP = [
   {id:'wu1',name:'Dynamic Stretching',icon:'🤸',sets:1,reps:'5 min',part:'warmup',difficulty:'beginner',
@@ -713,11 +715,15 @@ const SIS_SCHED = [
 // ═══════════════════════════════════════════
 let S = {
   profile:'me', dayIdx:0, view:'day',
+  currentDateStr:'',
   setsDone:{}, daysDone:{me:new Set(),sister:new Set()},
   streaks:{me:0,sister:0}, notes:{}, rescheduled:{},
   weights:{me:[],sister:[]},
   gymDays:{me:new Set(),sister:new Set()},
   swims:{me:[],sister:[]},
+  cycleStart:{me:'',sister:''},
+  completedDates:{me:{},sister:{}},
+  skippedDates:{me:{},sister:{}},
   wtProfile:'me'
 };
 
@@ -733,6 +739,9 @@ try {
     S.weights={me:p.weights?.me||[],sister:p.weights?.sister||[]};
     S.gymDays={me:new Set(p.gymDays?.me||[]),sister:new Set(p.gymDays?.sister||[])};
     S.swims={me:p.swims?.me||[],sister:p.swims?.sister||[]};
+    S.cycleStart={me:p.cycleStart?.me||'',sister:p.cycleStart?.sister||''};
+    S.completedDates={me:p.completedDates?.me||{},sister:p.completedDates?.sister||{}};
+    S.skippedDates={me:p.skippedDates?.me||{},sister:p.skippedDates?.sister||{}};
   }
 } catch(e){}
 
@@ -743,7 +752,10 @@ function save(){
     streaks:S.streaks,rescheduled:S.rescheduled,
     weights:S.weights,
     gymDays:{me:[...S.gymDays.me],sister:[...S.gymDays.sister]},
-    swims:S.swims
+    swims:S.swims,
+    cycleStart:S.cycleStart,
+    completedDates:S.completedDates,
+    skippedDates:S.skippedDates
   }));}catch(e){}
 }
 
@@ -771,6 +783,9 @@ function goBack(id){showScreen(id);if(id==='landing')updateLanding();}
 function openProfile(who){
   S.profile=who;
   const isMe=who==='me';
+  // Init cycle start if first time
+  if(!S.cycleStart[who]) S.cycleStart[who]=todayStr();
+  S.currentDateStr=todayStr();
   // mark gym day
   S.gymDays[who].add(todayStr());
   save();
@@ -907,52 +922,154 @@ function updateLanding(){
 }
 
 // ═══════════════════════════════════════════
-// DAYS LIST
+// ROLLING CYCLE SCHEDULE SYSTEM
+// Each profile has a cycleStart date. Today's workout = position in cycle
+// based on how many days have passed. Skipped days auto-advance the cycle.
 // ═══════════════════════════════════════════
 function getSched(){return S.profile==='me'?ME_SCHED:SIS_SCHED;}
-function getDayPct(p,i){
+
+function dateStrToObj(str){ const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
+function daysBetween(a,b){ return Math.round((dateStrToObj(b)-dateStrToObj(a))/(1000*60*60*24)); }
+function addDays(dateStr, n){
+  const d=dateStrToObj(dateStr);
+  d.setDate(d.getDate()+n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateLabel(dateStr){
+  const today=todayStr(), tomorrow=addDays(today,1);
+  if(dateStr===today) return 'TODAY';
+  if(dateStr===tomorrow) return 'TOMORROW';
+  const [,m,d]=dateStr.split('-');
+  return `${d}/${m}`;
+}
+
+// Get or initialise cycle start for a profile
+function getCycleStart(p){
+  if(!S.cycleStart[p]) S.cycleStart[p]=todayStr();
+  return S.cycleStart[p];
+}
+
+// Get the cycle index (0–6) for a given date
+function getCycleIdxForDate(p, dateStr){
+  const start=getCycleStart(p);
+  const raw=daysBetween(start, dateStr);
+  return ((raw % 7) + 7) % 7;
+}
+
+// Get today's cycle index
+function getTodayCycleIdx(p){ return getCycleIdxForDate(p, todayStr()); }
+
+// Build the 7-day view: starting from today, show next 7 days
+// but account for skipped days — if a day was skipped it shows as such
+function buildCycleDays(p){
+  const today=todayStr();
   const sched=p==='me'?ME_SCHED:SIS_SCHED;
-  const day=sched[i];if(!day)return 0;
+  const days=[];
+  for(let i=0;i<7;i++){
+    const dateStr=addDays(today,i);
+    const cycleIdx=getCycleIdxForDate(p,dateStr);
+    const workout=sched[cycleIdx];
+    const pct=getDayPct(p,dateStr);
+    const isDone=S.completedDates[p]&&S.completedDates[p][dateStr];
+    const isSkipped=S.skippedDates[p]&&S.skippedDates[p][dateStr];
+    days.push({dateStr,cycleIdx,workout,pct,isDone,isSkipped,isToday:i===0});
+  }
+  return days;
+}
+
+// Also build past 3 days for history
+function buildPastDays(p){
+  const today=todayStr();
+  const sched=p==='me'?ME_SCHED:SIS_SCHED;
+  const days=[];
+  for(let i=1;i<=3;i++){
+    const dateStr=addDays(today,-i);
+    const cycleIdx=getCycleIdxForDate(p,dateStr);
+    const workout=sched[cycleIdx];
+    const pct=getDayPct(p,dateStr);
+    const isDone=S.completedDates[p]&&S.completedDates[p][dateStr];
+    const isSkipped=S.skippedDates[p]&&S.skippedDates[p][dateStr];
+    days.push({dateStr,cycleIdx,workout,pct,isDone,isSkipped,isToday:false,isPast:true});
+  }
+  return days;
+}
+
+function getDayPct(p, dateStr){
+  // dateStr is the calendar date key for this session
+  const sched=p==='me'?ME_SCHED:SIS_SCHED;
+  const cycleIdx=getCycleIdxForDate(p,dateStr);
+  const day=sched[cycleIdx];
+  if(!day) return 0;
   const all=[...WARMUP,...day.exercises,...COOLDOWN];
   const total=all.reduce((s,e)=>s+(e.sets===1?1:e.sets),0);
-  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${i}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
+  const done=all.reduce((s,e)=>{
+    const arr=S.setsDone[`${p}_${dateStr}_${e.id}`]||[];
+    return s+arr.filter(Boolean).length;
+  },0);
   return total===0?0:Math.round((done/total)*100);
 }
 
 function renderDaysList(){
   const list=document.getElementById('days-list');
-  const sched=getSched();
-  const p=S.profile;const isMe=p==='me';
-  list.innerHTML=sched.map((d,i)=>{
-    const isToday=i===TODAY_IDX;
-    const pct=getDayPct(p,i);
-    const isDone=pct===100;
-    const isMissed=i<TODAY_IDX&&pct>0&&pct<100;
+  const p=S.profile; const isMe=p==='me';
+  const upcoming=buildCycleDays(p);
+  const past=buildPastDays(p);
+  const allDays=[...past.reverse(),...upcoming];
+
+  list.innerHTML=allDays.map(d=>{
+    const pct=d.pct;
+    const isDone=d.isDone||pct===100;
+    const isSkipped=d.isSkipped;
     let cls='day-card';
     let icon='›';
     if(isDone){cls+=' completed';icon='✅';}
-    else if(isToday){cls+=' today';icon='📍';}
-    else if(isMissed){cls+=' missed';icon='⚠️';}
-    const chips=d.parts.map(pt=>{
+    else if(isSkipped){cls+=' missed';icon='⏭';}
+    else if(d.isToday){cls+=' today';icon='📍';}
+    else if(d.isPast&&!isDone){cls+=' missed';icon='⚠️';}
+
+    const chips=d.workout.parts.map(pt=>{
       const k=pt.toLowerCase().replace(/[^a-z]/g,'').substring(0,8);
       return`<span class="part-chip chip-${k}">${pt}</span>`;
     }).join('');
     const fill=isDone?'#34d399':(isMe?'var(--accent)':'var(--accent2)');
-    return`<div class="${cls}" onclick="openDay(${i})">
+    const lbl=dateLabel(d.dateStr);
+    const skipBtn=(!isDone&&!d.isPast)?`<div class="skip-btn" onclick="event.stopPropagation();skipDay('${d.dateStr}')" title="Skip this day">⏭</div>`:'';
+
+    return`<div class="${cls}" onclick="openDayByDate('${d.dateStr}',${d.cycleIdx})">
       <div class="day-left">
-        <div class="day-name">${d.day.substring(0,3).toUpperCase()}</div>
-        ${isToday?'<div class="today-tag">TODAY</div>':''}
+        <div class="day-name" style="font-size:${lbl.length>5?'13px':'20px'}">${lbl}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">${d.workout.day.substring(0,3).toUpperCase()}</div>
       </div>
       <div class="day-mid">
         <div class="day-parts-row">${chips}</div>
         <div class="day-progress-mini"><div class="day-progress-mini-fill" style="width:${pct}%;background:${fill}"></div></div>
       </div>
       <div class="day-right">
+        ${skipBtn}
         <div class="day-status-icon">${icon}</div>
         <div class="day-pct-text">${pct>0?pct+'%':''}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+function skipDay(dateStr){
+  const p=S.profile;
+  if(!S.skippedDates[p]) S.skippedDates[p]={};
+  S.skippedDates[p][dateStr]=true;
+  save();
+  renderDaysList();
+}
+
+function openDayByDate(dateStr, cycleIdx){
+  S.currentDateStr=dateStr;
+  S.dayIdx=cycleIdx;
+  const sched=getSched();
+  const day=sched[cycleIdx];
+  const lbl=dateLabel(dateStr);
+  document.getElementById('session-title').textContent=`${lbl} — ${day.parts.join(' & ')}`;
+  renderSession(null, dateStr);
+  showScreen('workout-session');
 }
 
 // ═══════════════════════════════════════════
@@ -991,16 +1108,20 @@ function openBodyPart(part){
 // SESSION
 // ═══════════════════════════════════════════
 function openDay(i,filterPart){
+  // legacy - used by body part view, uses today's date
   S.dayIdx=i;
+  S.currentDateStr=S.currentDateStr||todayStr();
   const sched=getSched();
   const day=sched[i];
-  document.getElementById('session-title').textContent=`${day.day} — ${day.parts.join(' & ')}`;
-  renderSession(filterPart);
+  document.getElementById('session-title').textContent=`${dateLabel(S.currentDateStr)} — ${day.parts.join(' & ')}`;
+  renderSession(filterPart, S.currentDateStr);
   showScreen('workout-session');
 }
-function exKey(id){return`${S.profile}_${S.dayIdx}_${id}`;}
+function exKey(id){return`${S.profile}_${S.currentDateStr||todayStr()}_${id}`;}
 
-function renderSession(filterPart){
+function renderSession(filterPart, dateStr){
+  dateStr=dateStr||S.currentDateStr||todayStr();
+  S.currentDateStr=dateStr;
   const sched=getSched();
   const day=sched[S.dayIdx];
   const p=S.profile;const isMe=p==='me';
@@ -1114,9 +1235,10 @@ function updateProgress(){
   const sched=getSched();
   const day=sched[S.dayIdx];
   const p=S.profile;const isMe=p==='me';
+  const ds=S.currentDateStr||todayStr();
   const all=[...WARMUP,...day.exercises,...COOLDOWN];
   const total=all.reduce((s,e)=>s+(e.sets===1?1:e.sets),0);
-  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${S.dayIdx}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
+  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${ds}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
   const pct=total===0?0:Math.round((done/total)*100);
   const fill=document.getElementById('session-progress-fill');
   fill.style.width=pct+'%';
@@ -1130,13 +1252,23 @@ function checkComplete(){
   const sched=getSched();
   const day=sched[S.dayIdx];
   const p=S.profile;
+  const ds=S.currentDateStr||todayStr();
   const all=[...WARMUP,...day.exercises,...COOLDOWN];
   const total=all.reduce((s,e)=>s+(e.sets===1?1:e.sets),0);
-  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${S.dayIdx}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
+  const done=all.reduce((s,e)=>{const arr=S.setsDone[`${p}_${ds}_${e.id}`]||[];return s+arr.filter(Boolean).length;},0);
   if(done===total){
+    // Mark this calendar date as complete
+    if(!S.completedDates[p]) S.completedDates[p]={};
+    S.completedDates[p][ds]=true;
     S.daysDone[p].add(S.dayIdx);
+    // Calculate streak from consecutive completed calendar days back from today
     let streak=0;
-    for(let i=TODAY_IDX;i>=0;i--){if(S.daysDone[p].has(i))streak++;else break;}
+    const today=todayStr();
+    for(let i=0;i<30;i++){
+      const d=addDays(today,-i);
+      if(S.completedDates[p][d]) streak++;
+      else if(i>0) break; // allow today to not be done yet
+    }
     S.streaks[p]=streak;
     updateLanding();
     let banner=document.querySelector('.session-done-banner');
@@ -1285,6 +1417,9 @@ function getDataForSync(){
     weights: S.weights,
     gymDays: {me:[...S.gymDays.me], sister:[...S.gymDays.sister]},
     swims: S.swims,
+    cycleStart: S.cycleStart,
+    completedDates: S.completedDates,
+    skippedDates: S.skippedDates,
     lastUpdated: new Date().toISOString()
   }, null, 2);
 }
@@ -1329,6 +1464,9 @@ async function syncFromGist(showAlert){
     S.weights = p.weights || S.weights;
     S.gymDays = {me:new Set(p.gymDays?.me||[...S.gymDays.me]), sister:new Set(p.gymDays?.sister||[...S.gymDays.sister])};
     S.swims = {me:p.swims?.me||S.swims.me, sister:p.swims?.sister||S.swims.sister};
+    S.cycleStart = p.cycleStart||S.cycleStart;
+    S.completedDates = p.completedDates||S.completedDates;
+    S.skippedDates = p.skippedDates||S.skippedDates;
     save();
     updateLanding();
     const now = new Date().toLocaleString();
