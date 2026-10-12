@@ -361,12 +361,13 @@
     <div class="settings-card">
       <div class="settings-row"><div class="settings-row-label">Sync Status</div><div class="sync-status-badge" id="sync-status-badge">Not configured</div></div>
       <div class="settings-row" id="last-sync-row" style="display:none"><div class="settings-row-label">Last synced</div><div class="settings-row-val" id="last-sync-time">—</div></div>
+      <div id="sync-why" style="display:none;font-size:12px;line-height:1.5;color:#f87171;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:10px;padding:10px 12px;margin-top:6px"></div>
       <button class="modal-save" id="sync-now-btn" onclick="syncNow(true)" style="margin-top:10px;display:none">🔄 Sync Now</button>
     </div>
     <div class="settings-card">
       <div class="settings-field-label">GitHub Personal Access Token</div>
       <div class="settings-field-hint">github.com → Settings → Developer Settings → Personal Access Tokens (classic) → New token. Tick <strong>gist</strong> scope only. Keep it secret.</div>
-      <input class="modal-input" id="gh-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="margin-top:8px">
+      <input class="modal-input" id="gh-token" type="password" onfocus="if(this.value.startsWith('•'))this.value=''" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="margin-top:8px">
       <div class="settings-field-label" style="margin-top:12px">Gist ID</div>
       <div class="settings-field-hint">The long code at the end of your Gist's web address.</div>
       <input class="modal-input" id="gh-gist-id" type="text" placeholder="e.g. a1b2c3d4e5f6a1b2c3d4" style="margin-top:8px">
@@ -1864,7 +1865,7 @@ function doReschedule(j){
 // ═══════════════════════════════════════════
 let GH={token:'',gistId:''};
 try{const g=JSON.parse(localStorage.getItem('gymbuddy_gh')||'{}');GH.token=g.token||'';GH.gistId=g.gistId||'';}catch(e){}
-const SYNC={busy:false,again:false,timer:null,status:'off'};
+const SYNC={busy:false,again:false,timer:null,status:'off',why:''};
 const ghOn=()=>!!(GH.token&&GH.gistId);
 function scheduleSync(){if(!ghOn())return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(()=>syncNow(false),3000);}
 async function ghFetch(method,body){
@@ -1872,7 +1873,7 @@ async function ghFetch(method,body){
     method,cache:'no-store',
     headers:{'Authorization':`Bearer ${GH.token}`,'Accept':'application/vnd.github+json',...(body?{'Content-Type':'application/json'}:{})},
     body:body?JSON.stringify(body):undefined});
-  if(!r.ok)throw new Error('GitHub '+r.status);
+  if(!r.ok){const e=new Error('GitHub '+r.status);e.status=r.status;throw e;}
   return r.json();
 }
 async function pullRemote(){
@@ -1901,7 +1902,8 @@ async function syncNow(manual){
     setSyncStatus('ok');if(manual)toast('✅ Synced');
     return true;
   }catch(e){
-    setSyncStatus('err');if(manual)toast('❌ Sync failed — check internet, token & Gist ID');
+    SYNC.why=syncErrorText(e);
+    setSyncStatus('err');if(manual)toast('❌ '+SYNC.why.split(' — ')[0]);
     return false;
   }finally{
     SYNC.busy=false;
@@ -1925,14 +1927,28 @@ function setSyncStatus(st){
   const dot=$('sync-dot');dot.className='sync-dot'+(st==='ok'?' ok':st==='err'?' err':st==='busy'?' busy':'');
   if(activeScreen()==='settings-screen')updateSettingsUI();
 }
+function syncErrorText(e){
+  const st=e&&e.status;
+  if(st===401)return 'Token expired or not valid — GitHub tokens can expire. Create a new token and paste it above, then tap Save & Connect.';
+  if(st===403)return 'Token not allowed — make sure the new token has the "gist" box ticked (or GitHub is busy; try again in a few minutes).';
+  if(st===404)return 'Gist not found — check the Gist ID, and that the token was made on the same GitHub account that owns the Gist.';
+  if(st===409||st===422)return 'GitHub rejected the update — tap Sync Now to try again.';
+  if(st>=500)return 'GitHub is having problems right now — try again later.';
+  if(e instanceof SyntaxError)return 'The data in the Gist could not be read — tell Claude, it needs a fix.';
+  if(e instanceof TypeError)return 'Could not reach GitHub — check your internet connection.';
+  return 'Sync failed ('+(e&&e.message||'unknown error')+').';
+}
 function updateSettingsUI(){
   const b=$('sync-status-badge');
   if(!ghOn()){b.textContent='Not configured';b.className='sync-status-badge';$('sync-now-btn').style.display='none';$('last-sync-row').style.display='none';return;}
-  const map={ok:['✓ Connected','connected'],err:['Error — check token & Gist ID','error'],busy:['Syncing…','syncing'],off:['Connected','connected']};
+  const map={ok:['✓ Connected','connected'],err:['⚠️ Sync error','error'],busy:['Syncing…','syncing'],off:['Connected','connected']};
   const [txt,cls]=map[SYNC.status]||map.off;b.textContent=txt;b.className='sync-status-badge '+cls;
   $('sync-now-btn').style.display='block';
   const last=localStorage.getItem('gymbuddy_last_sync');
-  if(last){$('last-sync-row').style.display='flex';$('last-sync-time').textContent=new Date(last).toLocaleString();}
+  const ld=last?new Date(last):null;
+  $('last-sync-row').style.display='flex';
+  $('last-sync-time').textContent=ld&&!isNaN(ld)?ld.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'Not yet';
+  const why=$('sync-why');why.style.display=SYNC.status==='err'&&SYNC.why?'block':'none';why.textContent=SYNC.why;
 }
 function openSettings(){
   $('gh-token').value=GH.token?'••••••••••••••••':'';
@@ -1946,7 +1962,7 @@ async function saveGithubConfig(){
   if(!GH.token||!GH.gistId){toast('Enter both the token and the Gist ID');return;}
   localStorage.setItem('gymbuddy_gh',JSON.stringify(GH));
   const ok=await syncNow(false);
-  toast(ok?'✅ Connected — both phones will now stay in sync':'❌ Could not connect — check token & Gist ID');
+  toast(ok?'✅ Connected — both phones will now stay in sync':'❌ '+(SYNC.why||'Could not connect').split(' — ')[0]);
 }
 function clearGithubConfig(){
   openModal(`<div class="modal-title">Disconnect sync?</div><div class="modal-sub">Your data stays on this phone and in the Gist. This phone just stops syncing.</div>
